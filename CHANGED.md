@@ -1,5 +1,13 @@
 # 變更記錄 (Change Log)
 
+## 2025-11-29 23:34:38
+
+### 修復 Pydantic EmailStr 依賴問題
+- **pyproject.toml**: 添加 email-validator 支持
+  - 將 `pydantic==2.9.2` 改為 `pydantic[email]==2.9.2`
+  - 自動安裝 `email-validator` 和 `dnspython` 依賴
+  - 解決 `ImportError: email-validator is not installed` 錯誤
+
 ## 2025-11-29 23:30:10
 
 ### 修復資料庫初始化錯誤
