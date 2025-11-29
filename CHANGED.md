@@ -7,13 +7,18 @@
   - 為 `favorites_as_user` 和 `blocked_as_user` 添加 `overlaps` 參數
   - 使用 `primaryjoin` 區分收藏和封鎖關係類型
   - 更新 `UserRelationship.user` 關係為 `viewonly=True`
-- **app/auth.py**: 修復 bcrypt 密碼長度限制問題
-  - 在 `get_password_hash` 函數中添加密碼長度檢查
-  - 確保密碼不超過 72 字節（bcrypt 限制）
-  - 如果超過則自動截斷
+- **app/auth.py**: 完全重寫密碼哈希實現
+  - 移除 `passlib` 依賴，直接使用 `bcrypt` 庫
+  - 解決 bcrypt 版本兼容性問題（passlib 與新版本 bcrypt 不兼容）
+  - 在 `get_password_hash` 函數中添加密碼長度檢查（72 字節限制）
+  - 更新 `verify_password` 函數使用 bcrypt 直接驗證
+- **pyproject.toml**: 更新依賴
+  - 移除 `passlib[bcrypt]==1.7.4`
+  - 添加 `bcrypt==4.2.0`
 
 ### 問題解決
 - 解決了 "relationship will copy column" SQLAlchemy 警告
+- 解決了 bcrypt 版本兼容性問題（`AttributeError: module 'bcrypt' has no attribute '__about__'`）
 - 解決了 "password cannot be longer than 72 bytes" bcrypt 錯誤
 
 ## 2025-11-29 23:24:27
