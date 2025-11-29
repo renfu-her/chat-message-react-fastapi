@@ -1,11 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 
 from app.database import engine, Base
 from app.routers import auth, users, rooms, messages
-from app.websocket import websocket_manager
+from app.websocket import websocket_manager, handle_websocket
 
 
 @asynccontextmanager
@@ -40,7 +40,6 @@ app.include_router(rooms.router, prefix="/api/rooms", tags=["房間"])
 app.include_router(messages.router, prefix="/api/messages", tags=["消息"])
 
 # WebSocket 端點
-from app.websocket import handle_websocket
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await handle_websocket(websocket)
