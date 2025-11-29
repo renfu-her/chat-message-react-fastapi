@@ -142,29 +142,53 @@ const disconnectWebSocket = () => {
 export const api = {
   // 認證
   async login(email: string, password: string): Promise<{ access_token: string; user: User }> {
-    const response = await apiRequest<{ access_token: string; user: User }>('/auth/login', {
+    const response = await apiRequest<any>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     
+    // 轉換後端格式到前端格式
+    const user: User = {
+      id: response.user.id,
+      name: response.user.name,
+      email: response.user.email,
+      avatar: response.user.avatar,
+      isOnline: response.user.is_online ?? response.user.isOnline ?? false,
+      bio: response.user.bio,
+      favorites: response.user.favorites || [],
+      blocked: response.user.blocked || [],
+    };
+    
     setToken(response.access_token);
-    localStorage.setItem('chat_current_user', JSON.stringify(response.user));
+    localStorage.setItem('chat_current_user', JSON.stringify(user));
     connectWebSocket();
     
-    return response;
+    return { access_token: response.access_token, user };
   },
 
   async register(name: string, email: string, password: string): Promise<{ access_token: string; user: User }> {
-    const response = await apiRequest<{ access_token: string; user: User }>('/auth/register', {
+    const response = await apiRequest<any>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     });
     
+    // 轉換後端格式到前端格式
+    const user: User = {
+      id: response.user.id,
+      name: response.user.name,
+      email: response.user.email,
+      avatar: response.user.avatar,
+      isOnline: response.user.is_online ?? response.user.isOnline ?? false,
+      bio: response.user.bio,
+      favorites: response.user.favorites || [],
+      blocked: response.user.blocked || [],
+    };
+    
     setToken(response.access_token);
-    localStorage.setItem('chat_current_user', JSON.stringify(response.user));
+    localStorage.setItem('chat_current_user', JSON.stringify(user));
     connectWebSocket();
     
-    return response;
+    return { access_token: response.access_token, user };
   },
 
   async logout(): Promise<void> {
@@ -180,23 +204,56 @@ export const api = {
   },
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiRequest<User>('/auth/me');
-    localStorage.setItem('chat_current_user', JSON.stringify(response));
-    return response;
+    const response = await apiRequest<any>('/auth/me');
+    // 轉換後端格式到前端格式
+    const user: User = {
+      id: response.id,
+      name: response.name,
+      email: response.email,
+      avatar: response.avatar,
+      isOnline: response.is_online ?? response.isOnline ?? false,
+      bio: response.bio,
+      favorites: response.favorites || [],
+      blocked: response.blocked || [],
+    };
+    localStorage.setItem('chat_current_user', JSON.stringify(user));
+    return user;
   },
 
   // 用戶
   async getUsers(): Promise<User[]> {
-    return apiRequest<User[]>('/users');
+    const users = await apiRequest<any[]>('/users');
+    // 轉換後端格式到前端格式
+    return users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      isOnline: user.is_online ?? user.isOnline ?? false,
+      bio: user.bio,
+      favorites: user.favorites || [],
+      blocked: user.blocked || [],
+    }));
   },
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
-    const response = await apiRequest<User>(`/users/${userId}/profile`, {
+    const response = await apiRequest<any>(`/users/${userId}/profile`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
-    localStorage.setItem('chat_current_user', JSON.stringify(response));
-    return response;
+    // 轉換後端格式到前端格式
+    const user: User = {
+      id: response.id,
+      name: response.name,
+      email: response.email,
+      avatar: response.avatar,
+      isOnline: response.is_online ?? response.isOnline ?? false,
+      bio: response.bio,
+      favorites: response.favorites || [],
+      blocked: response.blocked || [],
+    };
+    localStorage.setItem('chat_current_user', JSON.stringify(user));
+    return user;
   },
 
   async toggleFavorite(userId: string, targetId: string): Promise<User> {

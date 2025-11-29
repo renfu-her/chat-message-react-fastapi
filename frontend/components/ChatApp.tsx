@@ -117,15 +117,30 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
           }
           break;
         case 'USER_UPDATE':
-          setUsers(prev => prev.map(u => u.id === event.payload.id ? event.payload : u));
+          setUsers(prev => prev.map(u => {
+            if (u.id === event.payload.id) {
+              return {
+                ...u,
+                ...event.payload,
+                isOnline: event.payload.isOnline ?? event.payload.is_online ?? u.isOnline,
+              };
+            }
+            return u;
+          }));
           if (event.payload.id === currentUser.id) {
-            onUserUpdate(event.payload);
+            onUserUpdate({
+              ...event.payload,
+              isOnline: event.payload.isOnline ?? event.payload.is_online ?? currentUser.isOnline,
+            });
           }
           break;
         case 'USER_JOINED':
           setUsers(prev => {
             if (prev.some(u => u.id === event.payload.id)) return prev;
-            return [...prev, event.payload];
+            return [...prev, {
+              ...event.payload,
+              isOnline: event.payload.isOnline ?? event.payload.is_online ?? true,
+            }];
           });
           break;
         case 'USER_LEFT':

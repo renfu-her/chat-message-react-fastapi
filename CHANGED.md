@@ -108,6 +108,20 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 00:05:00
+
+### 修復用戶在線狀態綠色燈顯示問題
+- **frontend/services/api.ts**: 修復數據格式轉換
+  - `login()`: 將後端 `is_online` 轉換為前端 `isOnline`
+  - `register()`: 將後端 `is_online` 轉換為前端 `isOnline`
+  - `getCurrentUser()`: 將後端 `is_online` 轉換為前端 `isOnline`
+  - `getUsers()`: 將所有用戶的 `is_online` 轉換為 `isOnline`
+  - `updateProfile()`: 將後端 `is_online` 轉換為前端 `isOnline`
+- **frontend/components/ChatApp.tsx**: 修復 WebSocket 事件處理
+  - `USER_UPDATE` 事件：正確處理 `isOnline` 和 `is_online` 兩種格式
+  - `USER_JOINED` 事件：正確處理 `isOnline` 和 `is_online` 兩種格式
+  - 確保在線狀態正確顯示綠色指示燈
+
 ## 2025-11-29 23:58:00
 
 ### 修復登入卡住問題
