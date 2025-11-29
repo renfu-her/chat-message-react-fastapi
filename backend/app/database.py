@@ -11,6 +11,10 @@ engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=3600,
+    pool_timeout=20,  # 連接池超時時間（秒）
+    connect_args={
+        "connect_timeout": 10,  # MySQL 連接超時時間（秒）
+    },
     echo=False  # 設為 True 可以看到 SQL 語句
 )
 

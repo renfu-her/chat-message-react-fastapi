@@ -108,3 +108,46 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-29 23:58:00
+
+### 修復登入卡住問題
+- **backend/app/routers/auth.py**: 優化登入和註冊流程
+  - 將 WebSocket 廣播移到返回響應之後，避免阻塞登入流程
+  - 添加 try-except 包裹 WebSocket 廣播，失敗不影響登入
+  - 移除登入時的 `broadcast_user_update` 調用（已在返回前執行）
+- **backend/app/database.py**: 添加資料庫連接超時配置
+  - 添加 `pool_timeout=20` 連接池超時
+  - 添加 `connect_timeout=10` MySQL 連接超時
+- **frontend/services/api.ts**: 添加請求超時處理
+  - 使用 `AbortController` 實現 30 秒請求超時
+  - 超時時顯示友好的錯誤消息
+  - 改進錯誤處理邏輯
+
+## 2025-11-29 23:52:00
+
+### 修復 WebSocket 連接和認證問題
+- **backend/main.py**: 修復 WebSocket 路由註冊
+  - 將 `app.add_api_route("/ws", handle_websocket, methods=["GET"])` 改為 `@app.websocket("/ws")` 裝飾器
+  - 添加 `WebSocket` 導入
+- **backend/app/websocket.py**: 修復 `handle_websocket` 函數簽名
+  - 移除不必要的 `token` 參數，只從查詢參數獲取
+  - 簡化函數實現
+- **frontend/services/api.ts**: 改進錯誤處理
+  - 當收到 401/403 錯誤時自動清除 token 和用戶信息
+  - 移除模塊加載時的自動 WebSocket 連接（改為在登入/註冊成功後連接）
+  - 改進錯誤消息解析
+- **frontend/components/ChatApp.tsx**: 改進數據加載邏輯
+  - 在加載數據前檢查 token 是否存在
+  - 添加更好的錯誤處理和日誌記錄
+- **frontend/App.tsx**: 改進會話恢復邏輯
+  - 當 token 驗證失敗時清除所有相關數據
+  - 確保沒有 token 時不會嘗試恢復會話
+
+## 2025-11-29 23:50:00
+
+### 前端包管理器更新為 pnpm
+- **frontend/README.md**: 更新安裝和使用說明
+  - 將 `npm install` 改為 `pnpm install`
+  - 將 `npm start` 改為 `pnpm dev`
+  - 明確說明項目使用 pnpm 作為包管理器
+

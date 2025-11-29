@@ -91,37 +91,6 @@ async def get_user_from_token(token: str) -> User | None:
         db.close()
 
 
-async def handle_websocket(websocket: WebSocket, token: str = None):
-    """處理 WebSocket 連接"""
-    # 從查詢參數獲取 token
-    if not token:
-        # 嘗試從查詢參數獲取
-        query_params = dict(websocket.query_params)
-        token = query_params.get("token")
-    
-    if not token:
-        await websocket.close(code=1008, reason="Authentication required")
-        return
-    
-    # 驗證用戶
-    user = await get_user_from_token(token)
-    if not user:
-        await websocket.close(code=1008, reason="Invalid token")
-        return
-    
-    # 建立連接
-    await websocket_manager.connect(websocket, user.id)
-    
-    try:
-        while True:
-            # 接收消息（如果需要雙向通信）
-            data = await websocket.receive_text()
-            # 這裡可以處理客戶端發送的消息
-            # 目前只實現服務器到客戶端的推送
-    except WebSocketDisconnect:
-        websocket_manager.disconnect(websocket, user.id)
-
-
 # 添加廣播方法到 ConnectionManager
 async def broadcast_new_message(self, message):
     """廣播新消息事件"""
@@ -239,9 +208,8 @@ ConnectionManager.broadcast_user_update = broadcast_user_update
 ConnectionManager.broadcast_user_joined = broadcast_user_joined
 ConnectionManager.broadcast_user_left = broadcast_user_left
 
-# 修復 handle_websocket 函數簽名
-async def handle_websocket_fixed(websocket: WebSocket):
-    """處理 WebSocket 連接（修復版本）"""
+async def handle_websocket(websocket: WebSocket):
+    """處理 WebSocket 連接"""
     # 從查詢參數獲取 token
     query_params = dict(websocket.query_params)
     token = query_params.get("token")
@@ -267,8 +235,4 @@ async def handle_websocket_fixed(websocket: WebSocket):
             # 目前只實現服務器到客戶端的推送
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket, user.id)
-
-
-# 導出 handle_websocket_fixed 作為主要處理函數
-handle_websocket = handle_websocket_fixed
 

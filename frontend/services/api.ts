@@ -32,17 +32,46 @@ const apiRequest = async <T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // 創建帶超時的 fetch 請求
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 秒超時
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(error.detail || `HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorDetail = response.statusText;
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.detail || errorData.message || errorDetail;
+      } catch {
+        // 如果響應不是 JSON，使用 statusText
+      }
+      
+      // 如果是認證錯誤，清除 token
+      if (response.status === 401 || response.status === 403) {
+        removeToken();
+        localStorage.removeItem('chat_current_user');
+        disconnectWebSocket();
+      }
+      
+      throw new Error(errorDetail || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout. Please check your connection and try again.');
+    }
+    throw error;
   }
-
-  return response.json();
 };
 
 // WebSocket 連接管理
@@ -314,8 +343,6 @@ export const api = {
   },
 };
 
-// 如果已有 token，自動連接 WebSocket
-if (getToken()) {
-  connectWebSocket();
-}
+// 不在模塊加載時自動連接 WebSocket
+// WebSocket 將在登入/註冊成功後由 api.login 或 api.register 調用 connectWebSocket()
 

@@ -30,9 +30,6 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     # 創建 token
     access_token = create_access_token(data={"sub": user.id})
     
-    # 廣播用戶更新事件
-    await websocket_manager.broadcast_user_update(user)
-    
     # 獲取用戶關係（收藏和封鎖）
     favorites = []
     blocked = []
@@ -92,9 +89,6 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     # 創建 token
     access_token = create_access_token(data={"sub": new_user.id})
     
-    # 廣播用戶加入事件
-    await websocket_manager.broadcast_user_joined(new_user)
-    
     user_dict = {
         "id": new_user.id,
         "name": new_user.name,
@@ -105,6 +99,13 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         "favorites": [],
         "blocked": []
     }
+    
+    # 廣播用戶加入事件（在返回響應後異步執行，避免阻塞）
+    try:
+        await websocket_manager.broadcast_user_joined(new_user)
+    except Exception as e:
+        # WebSocket 廣播失敗不應該影響註冊流程
+        print(f"Warning: Failed to broadcast user joined: {e}")
     
     return TokenResponse(
         access_token=access_token,

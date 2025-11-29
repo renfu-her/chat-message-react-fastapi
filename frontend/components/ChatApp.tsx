@@ -70,6 +70,13 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   useEffect(() => {
     const loadData = async () => {
       try {
+        // 確保用戶已登入
+        const token = localStorage.getItem('chat_token');
+        if (!token) {
+          console.warn('No token found, skipping data load');
+          return;
+        }
+        
         const [loadedRooms, loadedUsers] = await Promise.all([
           api.getRooms(),
           api.getUsers()
@@ -78,6 +85,10 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         setUsers(loadedUsers);
       } catch (error) {
         console.error('Failed to load data:', error);
+        // 如果是認證錯誤，可能需要重新登入
+        if (error instanceof Error && error.message.includes('authenticated')) {
+          console.warn('Authentication failed, user may need to login again');
+        }
       }
     };
     loadData();

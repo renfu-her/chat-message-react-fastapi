@@ -78,8 +78,8 @@ You can use these pre-configured accounts to test the application immediately.
 
 ## 📦 Installation
 
-This project is designed to run in a standard React environment.
+This project is designed to run in a standard React environment using **pnpm** as the package manager.
 
 1.  Clone the repository.
-2.  Install dependencies: `npm install`
-3.  Start the development server: `npm start`
+2.  Install dependencies: `pnpm install`
+3.  Start the development server: `pnpm dev`

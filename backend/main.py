@@ -41,7 +41,9 @@ app.include_router(messages.router, prefix="/api/messages", tags=["消息"])
 
 # WebSocket 端點
 from app.websocket import handle_websocket
-app.add_api_route("/ws", handle_websocket, methods=["GET"])
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await handle_websocket(websocket)
 
 
 @app.get("/")
