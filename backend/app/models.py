@@ -30,14 +30,18 @@ class User(Base):
     favorites_as_user = relationship(
         "UserRelationship",
         foreign_keys="UserRelationship.user_id",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        overlaps="blocked_as_user",
+        primaryjoin="(User.id == UserRelationship.user_id) & (UserRelationship.relationship_type == 'favorite')",
+        viewonly=False
     )
     blocked_as_user = relationship(
         "UserRelationship",
         foreign_keys="UserRelationship.user_id",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        overlaps="favorites_as_user",
+        primaryjoin="(User.id == UserRelationship.user_id) & (UserRelationship.relationship_type == 'blocked')",
+        viewonly=False
     )
 
 
@@ -84,8 +88,8 @@ class UserRelationship(Base):
     relationship_type = Column(String(20), nullable=False)  # 'favorite' or 'blocked'
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # 關係
-    user = relationship("User", foreign_keys=[user_id], back_populates="favorites_as_user")
+    # 關係 - 使用 viewonly 因為我們已經在 User 模型中定義了具體的關係
+    user = relationship("User", foreign_keys=[user_id], viewonly=True)
     
     # 唯一約束：同一用戶對同一目標只能有一種關係類型
     __table_args__ = (

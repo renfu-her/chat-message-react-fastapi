@@ -1,5 +1,21 @@
 # 變更記錄 (Change Log)
 
+## 2025-11-29 23:30:10
+
+### 修復資料庫初始化錯誤
+- **app/models.py**: 修復 SQLAlchemy 關係警告
+  - 為 `favorites_as_user` 和 `blocked_as_user` 添加 `overlaps` 參數
+  - 使用 `primaryjoin` 區分收藏和封鎖關係類型
+  - 更新 `UserRelationship.user` 關係為 `viewonly=True`
+- **app/auth.py**: 修復 bcrypt 密碼長度限制問題
+  - 在 `get_password_hash` 函數中添加密碼長度檢查
+  - 確保密碼不超過 72 字節（bcrypt 限制）
+  - 如果超過則自動截斷
+
+### 問題解決
+- 解決了 "relationship will copy column" SQLAlchemy 警告
+- 解決了 "password cannot be longer than 72 bytes" bcrypt 錯誤
+
 ## 2025-11-29 23:24:27
 
 ### Python 版本更新
