@@ -5,7 +5,7 @@ import {
   Sun, Moon, Star, Ban, ChevronDown, ChevronUp, UserRoundX, MessageSquareWarning, Search
 } from 'lucide-react';
 import { User, Room, Message } from '../types';
-import { mockBackend, subscribeToSocket } from '../services/mockBackend';
+import { api } from '../services/api';
 import { convertImageToWebP } from '../services/imageUtils';
 
 interface ChatAppProps {
@@ -69,17 +69,21 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   // Initial Data Load & Socket Subscription
   useEffect(() => {
     const loadData = async () => {
-      const [loadedRooms, loadedUsers] = await Promise.all([
-        mockBackend.getRooms(),
-        mockBackend.getUsers()
-      ]);
-      setRooms(loadedRooms);
-      setUsers(loadedUsers);
+      try {
+        const [loadedRooms, loadedUsers] = await Promise.all([
+          api.getRooms(),
+          api.getUsers()
+        ]);
+        setRooms(loadedRooms);
+        setUsers(loadedUsers);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
     };
     loadData();
 
     // Socket Subscription
-    const unsubscribe = subscribeToSocket((event) => {
+    const unsubscribe = api.subscribeToSocket((event) => {
       const currentRoomId = activeRoomIdRef.current;
       
       switch (event.type) {
@@ -131,6 +135,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   const handleJoinRoom = async (room: Room) => {
     if (room.id === activeRoomId) return;
 
+    // 如果是私有房間且不是創建者，需要密碼
     if (room.isPrivate && room.createdBy !== currentUser.id) {
         setPendingRoom(room);
         setJoinPassword('');
@@ -139,6 +144,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         return;
     }
 
+    // 公開房間或創建者，直接進入（不需要調用 join API，因為後端會自動允許）
     await enterRoom(room.id);
   };
 
@@ -146,19 +152,24 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     e.preventDefault();
     if (!pendingRoom) return;
 
-    if (joinPassword === pendingRoom.password) {
+    try {
+        await api.joinRoom(pendingRoom.id, joinPassword);
         await enterRoom(pendingRoom.id);
         setShowPasswordModal(false);
         setPendingRoom(null);
-    } else {
-        setJoinError("Incorrect password");
+    } catch (error: any) {
+        setJoinError(error.message || "Incorrect password");
     }
   };
 
   const enterRoom = async (roomId: string) => {
     setActiveRoomId(roomId);
-    const msgs = await mockBackend.getMessages(roomId);
-    setMessages(msgs);
+    try {
+      const msgs = await api.getMessages(roomId);
+      setMessages(msgs);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
     if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
@@ -167,7 +178,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     if ((!inputMessage.trim() && !fileInputRef.current?.files?.length) || !activeRoomId) return;
 
     try {
-        await mockBackend.sendMessage({
+        await api.sendMessage({
           roomId: activeRoomId,
           senderId: currentUser.id,
           senderName: currentUser.name,
@@ -187,7 +198,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
 
     try {
       const webpBase64 = await convertImageToWebP(file);
-      await mockBackend.sendMessage({
+      await api.sendMessage({
         roomId: activeRoomId,
         senderId: currentUser.id,
         senderName: currentUser.name,
@@ -199,7 +210,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
       console.error("Image upload failed", err);
       alert("Failed to process image");
     } finally {
-        if(fileInputRef.current) fileInputRef.current.value = '';
+      if(fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -208,7 +219,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     if (!newRoomName.trim()) return;
     
     try {
-      await mockBackend.createRoom({
+      await api.createRoom({
         name: newRoomName,
         isPrivate,
         password: isPrivate ? roomPassword : undefined,
@@ -227,7 +238,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   const handleDeleteRoom = async (roomId: string) => {
     if (!window.confirm("Are you sure you want to delete this room?")) return;
     try {
-        await mockBackend.deleteRoom(roomId);
+        await api.deleteRoom(roomId);
         if (activeRoomId === roomId) setActiveRoomId(null);
     } catch (error) {
         console.error("Failed to delete room", error);
@@ -236,12 +247,22 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   };
 
   const handleToggleFavorite = async (targetId: string) => {
-      await mockBackend.toggleFavorite(currentUser.id, targetId);
+      try {
+        const updatedUser = await api.toggleFavorite(currentUser.id, targetId);
+        onUserUpdate(updatedUser);
+      } catch (error) {
+        console.error("Failed to toggle favorite", error);
+      }
   };
 
   const handleBlockUser = async (targetId: string) => {
       if(window.confirm("Block this user? They will be removed from Members and moved to your Block Members list.")) {
-          await mockBackend.blockUser(currentUser.id, targetId);
+          try {
+            const updatedUser = await api.blockUser(currentUser.id, targetId);
+            onUserUpdate(updatedUser);
+          } catch (error) {
+            console.error("Failed to block user", error);
+          }
       }
   };
 
@@ -674,9 +695,15 @@ const SearchModal: React.FC<{
         if (tab === 'MESSAGES' && query.length > 2) {
             setSearching(true);
             const timer = setTimeout(async () => {
-                const results = await mockBackend.searchGlobalMessages(query);
-                setFoundMessages(results);
-                setSearching(false);
+                try {
+                    const results = await api.searchGlobalMessages(query);
+                    setFoundMessages(results);
+                } catch (error) {
+                    console.error("Search failed", error);
+                    setFoundMessages([]);
+                } finally {
+                    setSearching(false);
+                }
             }, 500); // Debounce
             return () => clearTimeout(timer);
         } else {
@@ -776,7 +803,7 @@ const SearchModal: React.FC<{
 };
 
 // Unified Settings Modal
-const SettingsModal: React.FC<{ user: User, allUsers: User[], onClose: () => void }> = ({ user, allUsers, onClose }) => {
+const SettingsModal: React.FC<{ user: User, allUsers: User[], onClose: () => void, onUserUpdate?: (user: User) => void }> = ({ user, allUsers, onClose, onUserUpdate }) => {
     // Accordion State: 'profile', 'blocked', 'feedback'
     const [activeSection, setActiveSection] = useState<string>('profile');
 
@@ -800,7 +827,7 @@ const SettingsModal: React.FC<{ user: User, allUsers: User[], onClose: () => voi
                     isActive={activeSection === 'profile'}
                     onToggle={() => setActiveSection(activeSection === 'profile' ? '' : 'profile')}
                 >
-                    <ProfileForm user={user} onClose={onClose} />
+                    <ProfileForm user={user} onClose={onClose} onUserUpdate={onUserUpdate} />
                 </AccordionSection>
 
                 {/* Section 2: Block Members */}
@@ -863,8 +890,11 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void }> = ({ user, onCl
             if (password.trim()) {
                 updates.password = password;
             }
-            await mockBackend.updateProfile(user.id, updates);
-            // Don't close modal, just show success? Or assume reactive update visible.
+            const updatedUser = await api.updateProfile(user.id, updates);
+            if (onUserUpdate) {
+                onUserUpdate(updatedUser);
+            }
+            onClose();
             alert("Profile updated successfully");
         } catch (error) {
             alert('Failed to update profile');
@@ -931,8 +961,13 @@ const BlockedList: React.FC<{ user: User, allUsers: User[] }> = ({ user, allUser
     const blockedUsers = allUsers.filter(u => user.blocked?.includes(u.id));
 
     const handleUnblock = async (targetId: string, name: string) => {
-        await mockBackend.unblockUser(user.id, targetId);
-        alert(`${name} has been unblocked.`);
+        try {
+            await api.unblockUser(user.id, targetId);
+            alert(`${name} has been unblocked.`);
+        } catch (error) {
+            console.error("Failed to unblock user", error);
+            alert("Failed to unblock user");
+        }
     };
 
     if (blockedUsers.length === 0) {

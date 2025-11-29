@@ -79,3 +79,32 @@
 - 整理了所有功能的使用流程和實現細節
 - 包含登入、註冊、Room 創建/加入/刪除、消息發送、用戶關係管理、搜索、設置等完整功能說明
 
+## 2025-11-29 23:49:15
+
+### 前端連接真實後端 API
+- **frontend/services/api.ts**: 創建新的 API 服務文件，替代 `mockBackend.ts`
+  - 實現 JWT token 認證機制，自動在請求頭中添加 Authorization
+  - 實現 WebSocket 連接管理，支持自動重連（最多 5 次）
+  - 所有 API 調用都連接到 `http://localhost:8000/api`
+  - WebSocket 連接到 `ws://localhost:8000/ws`
+  - 數據格式轉換：將後端的 snake_case 格式轉換為前端的 camelCase 格式
+- **frontend/App.tsx**: 更新認證流程
+  - 登入、註冊、登出使用真實 API
+  - 自動驗證 token 並恢復會話
+  - 登入/註冊成功後自動連接 WebSocket
+- **frontend/components/ChatApp.tsx**: 更新所有功能使用真實 API
+  - 房間管理（獲取、創建、加入、刪除）
+  - 消息管理（獲取、發送、搜索）
+  - 用戶管理（獲取列表、收藏、封鎖、取消封鎖）
+  - 個人資料更新
+  - WebSocket 訂閱處理實時更新（新消息、用戶狀態、房間變更等）
+- **數據格式轉換**:
+  - 後端 `is_private` → 前端 `isPrivate`
+  - 後端 `created_by` → 前端 `createdBy`
+  - 後端 `is_online` → 前端 `isOnline`
+  - 後端 `room_id` → 前端 `roomId`
+  - 後端 `sender_id` → 前端 `senderId`
+  - 後端 `sender_name` → 前端 `senderName`
+  - 後端 `sender_avatar` → 前端 `senderAvatar`
+  - 後端 `room_name` → 前端 `roomName`
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ChatApp from './components/ChatApp';
 import { User } from './types';
-import { mockBackend } from './services/mockBackend';
+import { api } from './services/api';
 import { MessageSquare, Mail, Lock, User as UserIcon, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -100,9 +100,8 @@ const App: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const loggedInUser = await mockBackend.login(email, password);
-      setUser(loggedInUser);
-      localStorage.setItem('chat_current_user', JSON.stringify(loggedInUser));
+      const response = await api.login(email, password);
+      setUser(response.user);
     } catch (err: any) {
       setError(err.message || 'Login failed');
       generateCaptcha();
@@ -116,9 +115,8 @@ const App: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const newUser = await mockBackend.register(name, email, password);
-      setUser(newUser);
-      localStorage.setItem('chat_current_user', JSON.stringify(newUser));
+      const response = await api.register(name, email, password);
+      setUser(response.user);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -126,12 +124,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (user) {
-        mockBackend.logout(user.id);
+        await api.logout();
     }
     setUser(null);
-    localStorage.removeItem('chat_current_user');
     setEmail('');
     setPassword('');
     setCaptchaInput('');
