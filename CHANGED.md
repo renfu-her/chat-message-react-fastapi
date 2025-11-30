@@ -108,6 +108,46 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 16:20:00
+
+### 完善後端混合方案支持
+- **backend/app/websocket.py**: 添加 WebSocket 心跳檢測支持
+  - 處理前端發送的 `ping` 消息
+  - 自動回應 `pong` 消息
+  - 確保連接保持活躍
+- **backend/app/routers/realtime.py**: 優化 Long Polling 端點
+  - 支持增量獲取（通過 `lastMessageId` 和 `lastTimestamp`）
+  - 首次請求返回初始數據（房間列表、用戶列表）
+  - 後續請求只返回新事件，避免重複數據
+  - 立即返回響應，客戶端會立即發起下一次請求
+- **backend/BACKEND_HYBRID_SETUP.md**: 創建後端配置指南
+  - 詳細說明後端需要配合的功能
+  - 配置檢查清單
+  - 性能優化建議
+  - 測試方法
+
+## 2025-11-30 16:15:00
+
+### 實現混合實時連接方案（WebSocket + Long Polling）
+- **frontend/services/realtimeConnection.ts**: 創建混合連接管理器
+  - 優先使用 WebSocket，失敗時自動降級到 Long Polling
+  - 統一的事件接口，上層代碼無需關心底層實現
+  - 自動重連機制和心跳檢測
+  - 連接狀態管理和監控
+- **backend/app/routers/realtime.py**: 創建 Long Polling 備用端點
+  - `/api/realtime/poll` - Long Polling 端點，返回新事件
+  - `/api/realtime/status` - 獲取實時連接狀態
+  - 支持增量獲取（通過 lastMessageId）
+- **frontend/services/api.ts**: 添加混合連接接口
+  - `subscribeToRealtime()` - 使用混合連接方案（推薦）
+  - `getRealtimeStatus()` - 獲取當前連接狀態
+  - 保留 `subscribeToSocket()` 以保持向後兼容
+- **backend/main.py**: 註冊 realtime 路由
+- **frontend/HYBRID_REALTIME_GUIDE.md**: 創建使用指南
+  - 詳細的使用說明和示例代碼
+  - 工作原理和配置說明
+  - 遷移指南和注意事項
+
 ## 2025-11-30 16:10:00
 
 ### 創建實時通信方案比較文檔

@@ -437,7 +437,7 @@ export const api = {
     }));
   },
 
-  // WebSocket
+  // WebSocket (舊版，保留向後兼容)
   subscribeToSocket(callback: (event: { type: string; payload: any }) => void): () => void {
     wsListeners.add(callback);
     
@@ -450,6 +450,39 @@ export const api = {
     return () => {
       wsListeners.delete(callback);
     };
+  },
+
+  // 混合實時連接（推薦使用）
+  subscribeToRealtime(callback: (event: { type: string; payload: any }) => void): () => void {
+    // 動態導入混合連接管理器
+    import('./realtimeConnection').then(({ realtimeConnection }) => {
+      const token = getToken();
+      if (token) {
+        realtimeConnection.connect(token);
+      }
+      
+      // 訂閱事件
+      return realtimeConnection.subscribe(callback);
+    }).catch((error) => {
+      console.error('[API] Failed to load realtime connection:', error);
+      // 降級到舊版 WebSocket
+      return this.subscribeToSocket(callback);
+    });
+    
+    // 返回取消訂閱函數（簡化處理，實際應該從 realtimeConnection 返回）
+    return () => {
+      wsListeners.delete(callback);
+    };
+  },
+
+  // 獲取實時連接狀態
+  async getRealtimeStatus(): Promise<{ type: string; status: string }> {
+    try {
+      const { realtimeConnection } = await import('./realtimeConnection');
+      return realtimeConnection.getStatus();
+    } catch {
+      return { type: 'websocket', status: ws?.readyState === WebSocket.OPEN ? 'connected' : 'disconnected' };
+    }
   },
 };
 

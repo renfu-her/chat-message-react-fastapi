@@ -258,8 +258,20 @@ async def handle_websocket(websocket: WebSocket):
         while True:
             # 接收消息（如果需要雙向通信）
             data = await websocket.receive_text()
-            # 這裡可以處理客戶端發送的消息
-            # 目前只實現服務器到客戶端的推送
+            
+            # 處理心跳消息（ping/pong）
+            try:
+                message = json.loads(data)
+                if message.get("type") == "ping":
+                    # 回應心跳
+                    await websocket.send_json({"type": "pong"})
+                    continue
+            except json.JSONDecodeError:
+                # 如果不是 JSON，忽略
+                pass
+            
+            # 這裡可以處理其他客戶端發送的消息
+            # 目前主要實現服務器到客戶端的推送
     except WebSocketDisconnect:
         print(f"[WebSocket] User {user.id} disconnected")
         websocket_manager.disconnect(websocket, user.id)
