@@ -1,21 +1,7 @@
-:root {
-  /* Light Mode Palette */
-  --c-darker: #f1f5f9;      /* Slate 100 - App Background */
-  --c-dark: #f8fafc;        /* Slate 50 - Chat Background */
-  --c-paper: #ffffff;       /* White - Sidebar/Cards */
-  --c-input: #ffffff;       /* White - Inputs */
-  
-  --c-text-main: #0f172a;   /* Slate 900 */
-  --c-text-muted: #64748b;  /* Slate 500 */
-  
-  --c-border: #e2e8f0;      /* Slate 200 */
-  --c-hover: #e2e8f0;       /* Slate 200 */
-  --c-msg-received: #ffffff;/* White */
-}
-
 /* 默認使用深色主題 */
+:root,
 html {
-  /* Dark Mode Palette */
+  /* Dark Mode Palette - 默認深色主題 */
   --c-darker: #020617;      /* Slate 950 */
   --c-dark: #0f172a;        /* Slate 900 */
   --c-paper: #1e293b;       /* Slate 800 */
@@ -57,6 +43,12 @@ html.light {
   --c-border: #e2e8f0;      /* Slate 200 */
   --c-hover: #e2e8f0;       /* Slate 200 */
   --c-msg-received: #ffffff;/* White */
+}
+
+/* 確保 body 和根元素使用深色背景 */
+body {
+  background-color: var(--c-darker);
+  color: var(--c-text-main);
 }
 
 /* Custom scrollbar for chat */

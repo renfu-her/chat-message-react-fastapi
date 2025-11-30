@@ -146,8 +146,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-darker flex items-center justify-center p-4 transition-colors duration-300">
-      <div className="w-full max-w-md bg-paper border border-border-base p-8 rounded-2xl shadow-2xl">
+    <div className="min-h-screen bg-darker flex items-center justify-center p-4 transition-colors duration-300" style={{ backgroundColor: 'var(--c-darker)', color: 'var(--c-text-main)' }}>
+      <div className="w-full max-w-md bg-paper border border-border-base p-8 rounded-2xl shadow-2xl" style={{ backgroundColor: 'var(--c-paper)', borderColor: 'var(--c-border)' }}>
         <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
                 <MessageSquare size={32} className="text-primary" />
