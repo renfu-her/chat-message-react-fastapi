@@ -157,9 +157,14 @@ const App: React.FC = () => {
         <h2 className="text-3xl font-bold text-center text-txt-main mb-2">
             {view === 'LOGIN' ? 'Welcome Back' : 'Join Us'}
         </h2>
-        <p className="text-txt-muted text-center mb-8">
+        <p className="text-txt-muted text-center mb-2">
             {view === 'LOGIN' ? 'Sign in to continue chatting' : 'Create an account to get started'}
         </p>
+        {import.meta.env.MODE === 'development' && (
+          <p className="text-xs text-txt-muted text-center mb-6 opacity-50">
+            Development Mode
+          </p>
+        )}
 
         {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg text-sm text-center">

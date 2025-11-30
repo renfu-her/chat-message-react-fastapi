@@ -108,6 +108,31 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 14:15:00
+
+### 更新登入畫面以適應生產環境
+- **frontend/index.html**: 更新頁面標題
+  - 將 `WebP Chat Connect` 改為 `Chat - AI Tracks`
+- **frontend/App.tsx**: 添加開發環境標識
+  - 在登入畫面底部顯示 "Development Mode"（僅在開發環境）
+  - 使用 `import.meta.env.MODE` 檢測環境
+- **frontend/vite-env.d.ts**: 添加 MODE 類型定義
+  - 添加 `MODE: string` 到 `ImportMetaEnv` 接口
+
+## 2025-11-30 14:00:00
+
+### 優化 WebSocket 配置和故障排除
+- **deployment/nginx.conf**: 優化 WebSocket 代理配置
+  - 調整超時設置為 7 天（WebSocket 長連接需要）
+  - 添加 `proxy_cache off` 禁用緩存
+  - 確保所有必需的 WebSocket 頭部正確設置
+  - 優化緩衝區配置
+- **deployment/websocket-troubleshooting.md**: 創建 WebSocket 故障排除指南
+  - 詳細的檢查清單
+  - 常見問題和解決方案
+  - 調試步驟和驗證方法
+  - 快速修復命令
+
 ## 2025-11-30 12:15:00
 
 ### 創建 index.css 文件
