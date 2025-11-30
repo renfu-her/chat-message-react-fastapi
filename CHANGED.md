@@ -118,10 +118,18 @@
   - 監聽端口：`127.0.0.1:8097`
   - 8 個 worker 進程，支持高並發
   - 配置日誌文件：`/var/log/uvicorn/chat-react-access.log` 和 `chat-react-error.log`
+- **deployment/nginx.conf**: 創建完整的 Nginx 配置文件
+  - 支持 HTTPS 和 HTTP/2
+  - `/api/` 路由代理到後端（端口 8097）
+  - `/ws` WebSocket 端點代理
+  - `/docs`, `/redoc`, `/openapi.json` FastAPI 文檔端點
+  - 前端靜態文件服務（React SPA）
+  - 靜態資源緩存優化
+  - 完整的代理頭部設置和超時配置
 - **deployment/README.md**: 創建部署指南
   - 包含完整的安裝步驟
   - 提供常用 systemd 命令
-  - Nginx 反向代理配置示例
+  - Nginx 配置安裝說明
   - WebSocket 支持配置說明
 - **backend/pyproject.toml**: 添加 gunicorn 依賴
   - 添加 `gunicorn==23.0.0` 到依賴列表

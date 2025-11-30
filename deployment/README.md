@@ -70,29 +70,40 @@ sudo systemctl daemon-reload
 sudo systemctl restart uvicorn-gunicorn.service
 ```
 
-### Nginx 配置示例
+### Nginx 配置
 
-在 Nginx 配置中添加反向代理：
+完整的 Nginx 配置文件已準備在 `deployment/nginx.conf`。
 
-```nginx
-server {
-    listen 80;
-    server_name chat.ai-tracks.com;
+**安裝步驟**：
 
-    location / {
-        proxy_pass http://127.0.0.1:8097;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket 支持
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
+1. **複製配置文件**：
+```bash
+sudo cp deployment/nginx.conf /etc/nginx/sites-available/chat.ai-tracks.com
+sudo ln -s /etc/nginx/sites-available/chat.ai-tracks.com /etc/nginx/sites-enabled/
 ```
+
+2. **修改配置**（如果需要）：
+   - 更新 SSL 證書路徑
+   - 確認前端靜態文件路徑：`/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/frontend/dist`
+   - 確認後端端口：`127.0.0.1:8097`
+
+3. **測試配置**：
+```bash
+sudo nginx -t
+```
+
+4. **重新加載 Nginx**：
+```bash
+sudo systemctl reload nginx
+```
+
+**配置說明**：
+- `/api/` - 後端 API 代理（端口 8097）
+- `/ws` - WebSocket 端點（端口 8097）
+- `/docs`, `/redoc`, `/openapi.json` - FastAPI 文檔端點
+- `/` - 前端靜態文件（React SPA）
+- 支持 HTTPS 和 HTTP/2
+- 靜態資源緩存優化
 
 ### 注意事項
 
