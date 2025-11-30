@@ -108,6 +108,17 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 16:10:00
+
+### 創建實時通信方案比較文檔
+- **backend/REALTIME_COMMUNICATION_OPTIONS.md**: 創建實時通信方案比較文檔
+  - 詳細比較 WebSocket、SSE、Long Polling、Short Polling 等方案
+  - 分析各方案的優缺點和適用場景
+  - 提供實現示例和代碼片段
+  - 針對聊天應用提供推薦方案
+  - 包含優化建議（心跳檢測、自動重連、消息確認等）
+  - 結論：WebSocket 是聊天應用的最佳選擇
+
 ## 2025-11-30 16:05:00
 
 ### 確認並完善 WebSocket 事件連接
