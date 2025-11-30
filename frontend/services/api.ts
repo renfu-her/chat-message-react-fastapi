@@ -1,8 +1,8 @@
 import { User, Room, Message } from '../types';
 
-// API 基礎 URL
-const API_BASE_URL = 'http://localhost:8000/api';
-const WS_BASE_URL = 'ws://localhost:8000';
+// API 基礎 URL - 從環境變量讀取
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000';
 
 // Token 管理
 const getToken = (): string | null => {

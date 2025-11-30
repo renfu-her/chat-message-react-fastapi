@@ -104,22 +104,37 @@ sudo systemctl reload nginx
 
 ### 環境變量配置
 
-如果需要配置不同的 API 端點，可以：
+項目已配置使用環境變量來區分開發和生產環境。
 
-1. **創建 `.env.production` 文件**：
-```bash
-cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/frontend
-nano .env.production
+**開發環境** (`.env`):
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_WS_BASE_URL=ws://localhost:8000
 ```
 
-內容示例：
+**生產環境** (`.env.production`):
 ```env
 VITE_API_BASE_URL=https://chat.ai-tracks.com/api
 VITE_WS_BASE_URL=wss://chat.ai-tracks.com
 ```
 
-2. **重新構建**：
+**注意事項**：
+- Vite 會自動根據構建模式選擇對應的環境變量文件
+- `pnpm build` 會自動使用 `.env.production`
+- `pnpm dev` 會使用 `.env`
+- 環境變量必須以 `VITE_` 開頭才能在客戶端代碼中使用
+
+**在服務器上配置**：
 ```bash
+cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/frontend
+
+# 確保 .env.production 存在並配置正確
+cat .env.production
+
+# 如果需要修改，編輯文件
+nano .env.production
+
+# 重新構建
 pnpm build
 ```
 

@@ -108,6 +108,27 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 12:10:00
+
+### 將前端 API 配置改為使用環境變量
+- **frontend/services/api.ts**: 使用環境變量配置 API URL
+  - 從 `import.meta.env.VITE_API_BASE_URL` 讀取 API 基礎 URL
+  - 從 `import.meta.env.VITE_WS_BASE_URL` 讀取 WebSocket URL
+  - 提供默認值以支持開發環境
+- **frontend/.env**: 創建開發環境配置文件
+  - `VITE_API_BASE_URL=http://localhost:8000/api`
+  - `VITE_WS_BASE_URL=ws://localhost:8000`
+- **frontend/.env.production**: 創建生產環境配置文件
+  - `VITE_API_BASE_URL=https://chat.ai-tracks.com/api`
+  - `VITE_WS_BASE_URL=wss://chat.ai-tracks.com`
+- **frontend/.gitignore**: 添加 .env 文件到忽略列表
+  - 防止敏感配置被提交到版本控制
+- **backend/main.py**: 更新 CORS 配置
+  - 添加 `https://chat.ai-tracks.com` 和 `http://chat.ai-tracks.com` 到允許的來源列表
+- **deployment/frontend-deploy.md**: 更新環境變量配置說明
+  - 說明開發和生產環境的配置方式
+  - 添加服務器上配置環境變量的步驟
+
 ## 2025-11-30 11:50:00
 
 ### 添加前端部署配置（使用 pnpm）
