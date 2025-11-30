@@ -51,6 +51,37 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     activeRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
 
+  // 處理瀏覽器關閉或頁面卸載時標記用戶離線
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // 嘗試標記用戶離線（使用 fetch with keepalive）
+      const token = localStorage.getItem('chat_token');
+      if (token) {
+        const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/logout`;
+        
+        // 使用 fetch with keepalive 確保請求在頁面關閉時也能發送
+        // sendBeacon 不支持自定義 headers，所以不能使用
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+          keepalive: true, // 確保請求在頁面關閉時也能發送
+        }).catch(() => {
+          // 忽略錯誤，因為頁面可能已經關閉
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // Initialize Theme
   useEffect(() => {
       const savedTheme = localStorage.getItem('chat_theme') as 'light' | 'dark' | null;

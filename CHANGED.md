@@ -108,6 +108,36 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 16:00:00
+
+### 完善用戶離線狀態處理（登出和關閉瀏覽器）
+- **backend/app/websocket.py**: 在 WebSocket 斷開時自動更新用戶離線狀態
+  - 在 `handle_websocket` 的 `except WebSocketDisconnect` 中，自動更新用戶的 `is_online = False`
+  - 廣播 `USER_LEFT` 事件通知其他用戶該用戶已離線
+  - 添加數據庫操作和錯誤處理
+- **frontend/services/api.ts**: 添加 `markUserOffline` 導出函數
+  - 使用 `navigator.sendBeacon` 或 `fetch` with `keepalive` 確保在頁面關閉時也能發送請求
+  - 支持在瀏覽器關閉時標記用戶離線
+- **frontend/components/ChatApp.tsx**: 添加瀏覽器關閉事件監聽
+  - 監聽 `beforeunload` 事件，在頁面關閉前嘗試調用 logout API
+  - 使用 `navigator.sendBeacon` 或 `fetch` with `keepalive` 作為備用方案
+  - 確保即使瀏覽器關閉也能標記用戶離線
+
+## 2025-11-30 15:55:00
+
+### 添加用戶離線狀態處理（登出和關閉瀏覽器）
+- **backend/app/websocket.py**: 在 WebSocket 斷開時更新用戶離線狀態
+  - 在 `handle_websocket` 的 `except WebSocketDisconnect` 中，更新用戶的 `is_online = False`
+  - 廣播 `USER_LEFT` 事件通知其他用戶
+  - 添加錯誤處理和日誌
+- **frontend/services/api.ts**: 添加 `markUserOffline` 函數
+  - 使用 `navigator.sendBeacon` 或 `fetch` with `keepalive` 確保在頁面關閉時也能發送請求
+  - 導出 `markUserOffline` 供其他組件使用
+- **frontend/components/ChatApp.tsx**: 添加瀏覽器關閉事件監聽
+  - 監聽 `beforeunload` 事件，在頁面關閉前嘗試標記用戶離線
+  - 監聽 `visibilitychange` 事件（可選，用於未來擴展）
+  - 使用 `navigator.sendBeacon` 或 `fetch` with `keepalive` 作為備用方案
+
 ## 2025-11-30 15:50:00
 
 ### 修復 WebSocket 連接管理器和添加調試日誌

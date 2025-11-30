@@ -261,5 +261,22 @@ async def handle_websocket(websocket: WebSocket):
             # 這裡可以處理客戶端發送的消息
             # 目前只實現服務器到客戶端的推送
     except WebSocketDisconnect:
+        print(f"[WebSocket] User {user.id} disconnected")
         websocket_manager.disconnect(websocket, user.id)
+        
+        # 更新用戶離線狀態
+        db = SessionLocal()
+        try:
+            db_user = db.query(User).filter(User.id == user.id).first()
+            if db_user:
+                db_user.is_online = False
+                db.commit()
+                print(f"[WebSocket] User {user.id} marked as offline")
+                # 廣播用戶離線事件
+                await websocket_manager.broadcast_user_left(user.id)
+        except Exception as e:
+            print(f"[WebSocket] Error updating user offline status: {e}")
+            db.rollback()
+        finally:
+            db.close()
 

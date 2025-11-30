@@ -139,6 +139,39 @@ const disconnectWebSocket = () => {
   wsListeners.clear();
 };
 
+// 標記用戶離線（用於關閉瀏覽器時）
+const markUserOffline = async () => {
+  const token = getToken();
+  if (!token) return;
+  
+  try {
+    // 使用 sendBeacon 確保請求能夠發送（即使頁面正在關閉）
+    const url = `${API_BASE_URL}/auth/logout`;
+    const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+    
+    if (navigator.sendBeacon) {
+      // 使用 sendBeacon（最可靠，但需要後端支持）
+      navigator.sendBeacon(url, blob);
+    } else {
+      // 降級方案：使用 fetch with keepalive
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+        keepalive: true, // 確保請求在頁面關閉時也能發送
+      }).catch(() => {
+        // 忽略錯誤，因為頁面可能已經關閉
+      });
+    }
+  } catch (error) {
+    // 忽略錯誤
+    console.error('Failed to mark user offline:', error);
+  }
+};
+
 // 導出 API 服務
 export const api = {
   // 認證
