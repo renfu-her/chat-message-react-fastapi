@@ -81,6 +81,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
           api.getRooms(),
           api.getUsers()
         ]);
+        
         setRooms(loadedRooms);
         setUsers(loadedUsers);
       } catch (error) {
@@ -96,6 +97,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     // Socket Subscription
     const unsubscribe = api.subscribeToSocket((event) => {
       const currentRoomId = activeRoomIdRef.current;
+      console.log('[ChatApp] WebSocket event received:', event.type, event.payload);
       
       switch (event.type) {
         case 'NEW_MESSAGE':
@@ -112,7 +114,46 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
           });
           break;
         case 'ROOM_CREATED':
-          setRooms(prev => [...prev, event.payload]);
+          setRooms(prev => {
+            // 檢查是否已存在（避免重複）
+            const exists = prev.some(r => r.id === event.payload.id);
+            if (exists) {
+              // 如果已存在，更新它而不是跳過
+              return prev.map(r => 
+                r.id === event.payload.id 
+                  ? {
+                      id: event.payload.id,
+                      name: event.payload.name,
+                      isPrivate: event.payload.isPrivate ?? event.payload.is_private ?? false,
+                      createdBy: event.payload.createdBy ?? event.payload.created_by,
+                      description: event.payload.description,
+                    }
+                  : r
+              );
+            }
+            // 添加新房間
+            return [...prev, {
+              id: event.payload.id,
+              name: event.payload.name,
+              isPrivate: event.payload.isPrivate ?? event.payload.is_private ?? false,
+              createdBy: event.payload.createdBy ?? event.payload.created_by,
+              description: event.payload.description,
+            }];
+          });
+          break;
+        case 'ROOM_UPDATED':
+          setRooms(prev => prev.map(r => {
+            if (r.id === event.payload.id) {
+              return {
+                ...r,
+                name: event.payload.name,
+                isPrivate: event.payload.isPrivate ?? event.payload.is_private,
+                createdBy: event.payload.createdBy ?? event.payload.created_by,
+                description: event.payload.description,
+              };
+            }
+            return r;
+          }));
           break;
         case 'ROOM_DELETED':
           setRooms(prev => prev.filter(r => r.id !== event.payload.roomId));
@@ -250,18 +291,27 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     if (!newRoomName.trim()) return;
     
     try {
-      await api.createRoom({
+      const newRoom = await api.createRoom({
         name: newRoomName,
         isPrivate,
         password: isPrivate ? roomPassword : undefined,
         createdBy: currentUser.id,
         description: isPrivate ? 'Private Room' : 'Public Room'
       });
+      
+      // 手動添加到列表（WebSocket 事件可能延遲）
+      setRooms(prev => {
+        const exists = prev.some(r => r.id === newRoom.id);
+        if (exists) return prev;
+        return [...prev, newRoom];
+      });
+      
       setShowCreateRoom(false);
       setNewRoomName('');
       setIsPrivate(false);
       setRoomPassword('');
     } catch (err) {
+      console.error("Failed to create room:", err);
       alert("Failed to create room");
     }
   };

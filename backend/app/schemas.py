@@ -66,6 +66,12 @@ class RoomJoinRequest(BaseModel):
     password: Optional[str] = None
 
 
+class RoomUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    password: Optional[str] = None  # 僅用於更新私有房間密碼
+
+
 # ============ 消息相關 ============
 class MessageResponse(BaseModel):
     id: str

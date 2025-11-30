@@ -108,6 +108,48 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 15:50:00
+
+### 修復 WebSocket 連接管理器和添加調試日誌
+- **backend/app/websocket.py**: 修復 ConnectionManager 初始化問題
+  - 添加缺失的 `self.active_connections: Dict[str, List[WebSocket]] = {}` 初始化
+  - 在 `broadcast_room_created` 中添加調試日誌，顯示廣播的房間信息和連接數
+  - 在 `broadcast` 方法中添加調試日誌，顯示廣播的目標用戶數和連接數
+  - 在 `connect` 方法中添加調試日誌，顯示新連接的用戶信息
+  - 在 `handle_websocket` 中添加連接和斷開的日誌
+- **frontend/services/api.ts**: 添加 WebSocket 消息接收日誌
+  - 在 `ws.onmessage` 中添加日誌，顯示接收到的 WebSocket 事件類型
+- **frontend/components/ChatApp.tsx**: 添加 WebSocket 事件處理日誌
+  - 在 WebSocket 事件處理器中添加日誌，顯示接收到的事件類型
+
+## 2025-11-30 15:45:00
+
+### 修復聊天室創建後不自動顯示的問題
+- **frontend/components/ChatApp.tsx**: 改進房間創建和 WebSocket 事件處理
+  - 在 `createRoom` 函數中，創建成功後立即手動添加到房間列表（不依賴 WebSocket 事件）
+  - 改進 `ROOM_CREATED` 事件處理，如果房間已存在則更新而不是跳過
+  - 在初始數據加載時，確保所有房間數據格式正確轉換（isPrivate/is_private）
+  - 添加更詳細的錯誤日誌
+
+## 2025-11-30 14:35:00
+
+### 添加 Room 更新功能和 WebSocket 事件
+- **backend/app/schemas.py**: 添加 RoomUpdateRequest
+  - 支持更新房間名稱、描述和密碼
+- **backend/app/routers/rooms.py**: 添加更新房間 API 端點
+  - `PUT /api/rooms/{room_id}` - 更新房間信息（僅創建者可更新）
+  - 添加異步 WebSocket 廣播，避免阻塞 API 響應
+  - 優化 `create_room` 和 `delete_room` 的 WebSocket 廣播為異步執行
+- **backend/app/websocket.py**: 添加 ROOM_UPDATED 事件
+  - 新增 `broadcast_room_updated` 方法
+  - 將方法綁定到 ConnectionManager 類
+- **frontend/services/api.ts**: 添加 updateRoom 方法
+  - 支持更新房間名稱、描述和密碼
+- **frontend/components/ChatApp.tsx**: 改進 WebSocket 事件處理
+  - 添加 `ROOM_UPDATED` 事件處理，更新現有房間信息
+  - 改進 `ROOM_CREATED` 事件處理，避免重複添加房間
+  - 確保數據格式正確轉換（isPrivate/is_private）
+
 ## 2025-11-30 14:30:00
 
 ### 強制應用深色主題到登入畫面

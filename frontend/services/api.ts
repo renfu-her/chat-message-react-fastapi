@@ -102,6 +102,7 @@ const connectWebSocket = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[WebSocket] Received event:', data.type, data.payload);
         wsListeners.forEach(listener => listener(data));
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -326,11 +327,30 @@ export const api = {
     };
   },
 
-  async deleteRoom(roomId: string): Promise<void> {
-    await apiRequest(`/rooms/${roomId}`, {
-      method: 'DELETE',
-    });
-  },
+      async deleteRoom(roomId: string): Promise<void> {
+        await apiRequest(`/rooms/${roomId}`, {
+          method: 'DELETE',
+        });
+      },
+
+      async updateRoom(roomId: string, updates: Partial<Room>): Promise<Room> {
+        const response = await apiRequest<any>(`/rooms/${roomId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: updates.name,
+            description: updates.description,
+            password: updates.password,
+          }),
+        });
+        
+        return {
+          id: response.id,
+          name: response.name,
+          isPrivate: response.isPrivate ?? response.is_private,
+          createdBy: response.createdBy ?? response.created_by,
+          description: response.description,
+        };
+      },
 
   // 消息
   async getMessages(roomId: string): Promise<Message[]> {

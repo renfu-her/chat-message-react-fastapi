@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Room, User
-from app.schemas import RoomResponse, RoomCreateRequest, RoomJoinRequest
+from app.schemas import RoomResponse, RoomCreateRequest, RoomJoinRequest, RoomUpdateRequest
 from app.dependencies import get_current_user
 from app.auth import verify_password, get_password_hash
 from app.websocket import websocket_manager
@@ -53,7 +53,7 @@ async def create_room(
     db.commit()
     db.refresh(new_room)
     
-    # 廣播房間創建事件
+    # 廣播房間創建事件（異步執行，避免阻塞）
     room_response = RoomResponse(
         id=new_room.id,
         name=new_room.name,
@@ -61,7 +61,7 @@ async def create_room(
         created_by=new_room.created_by,
         description=new_room.description
     )
-    await websocket_manager.broadcast_room_created(room_response)
+    asyncio.create_task(websocket_manager.broadcast_room_created(room_response))
     
     return room_response
 
@@ -146,8 +146,60 @@ async def delete_room(
     db.delete(room)
     db.commit()
     
-    # 廣播房間刪除事件
-    await websocket_manager.broadcast_room_deleted(room_id)
+    # 廣播房間刪除事件（異步執行，避免阻塞）
+    asyncio.create_task(websocket_manager.broadcast_room_deleted(room_id))
     
     return {"message": "Room deleted successfully"}
+
+
+@router.put("/{room_id}", response_model=RoomResponse)
+async def update_room(
+    room_id: str,
+    request: RoomUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """更新房間信息（僅創建者可更新）"""
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Room not found"
+        )
+    
+    if room.created_by != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only room creator can update the room"
+        )
+    
+    # 更新字段
+    if request.name is not None:
+        room.name = request.name
+    if request.description is not None:
+        room.description = request.description
+    if request.password is not None and request.password.strip():
+        # 更新私有房間密碼
+        if room.is_private:
+            room.password_hash = get_password_hash(request.password)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot set password for public rooms"
+            )
+    
+    db.commit()
+    db.refresh(room)
+    
+    # 廣播房間更新事件（異步執行，避免阻塞）
+    room_response = RoomResponse(
+        id=room.id,
+        name=room.name,
+        is_private=room.is_private,
+        created_by=room.created_by,
+        description=room.description
+    )
+    asyncio.create_task(websocket_manager.broadcast_room_updated(room_response))
+    
+    return room_response
 

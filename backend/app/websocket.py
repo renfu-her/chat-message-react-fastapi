@@ -17,6 +17,7 @@ class ConnectionManager:
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)
+        print(f"[WebSocket] User {user_id} connected. Total users: {len(self.active_connections)}, Total connections: {sum(len(conns) for conns in self.active_connections.values())}")
     
     def disconnect(self, websocket: WebSocket, user_id: str):
         """斷開 WebSocket 連接"""
@@ -42,13 +43,21 @@ class ConnectionManager:
     
     async def broadcast(self, message: dict):
         """廣播消息給所有連接的用戶"""
+        if not self.active_connections:
+            print(f"[WebSocket] No active connections to broadcast: {message.get('type')}")
+            return
+        
+        total_connections = sum(len(conns) for conns in self.active_connections.values())
+        print(f"[WebSocket] Broadcasting {message.get('type')} to {len(self.active_connections)} users ({total_connections} connections)")
+        
         disconnected_users = []
         for user_id, connections in self.active_connections.items():
             disconnected = []
             for connection in connections:
                 try:
                     await connection.send_json(message)
-                except:
+                except Exception as e:
+                    print(f"[WebSocket] Error sending to user {user_id}: {e}")
                     disconnected.append(connection)
             
             # 清理斷開的連接
@@ -122,6 +131,8 @@ async def broadcast_room_created(self, room):
             "description": room.description
         }
     }
+    print(f"[WebSocket] Broadcasting ROOM_CREATED: {room.id} - {room.name}")
+    print(f"[WebSocket] Active connections: {len(self.active_connections)} users")
     await self.broadcast(event)
 
 
@@ -131,6 +142,21 @@ async def broadcast_room_deleted(self, room_id: str):
         "type": "ROOM_DELETED",
         "payload": {
             "roomId": room_id
+        }
+    }
+    await self.broadcast(event)
+
+
+async def broadcast_room_updated(self, room):
+    """廣播房間更新事件"""
+    event = {
+        "type": "ROOM_UPDATED",
+        "payload": {
+            "id": room.id,
+            "name": room.name,
+            "isPrivate": room.is_private,
+            "createdBy": room.created_by,
+            "description": room.description
         }
     }
     await self.broadcast(event)
@@ -204,6 +230,7 @@ async def broadcast_user_left(self, user_id: str):
 ConnectionManager.broadcast_new_message = broadcast_new_message
 ConnectionManager.broadcast_room_created = broadcast_room_created
 ConnectionManager.broadcast_room_deleted = broadcast_room_deleted
+ConnectionManager.broadcast_room_updated = broadcast_room_updated
 ConnectionManager.broadcast_user_update = broadcast_user_update
 ConnectionManager.broadcast_user_joined = broadcast_user_joined
 ConnectionManager.broadcast_user_left = broadcast_user_left
