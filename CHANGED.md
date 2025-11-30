@@ -108,6 +108,24 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 00:10:00
+
+### 添加生產環境部署配置
+- **deployment/uvicorn-gunicorn.service**: 創建 systemd service 文件
+  - 配置 Gunicorn + Uvicorn workers 用於生產環境
+  - 工作目錄：`/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend`
+  - 用戶：`ai-tracks-chat`
+  - 監聽端口：`127.0.0.1:8097`
+  - 8 個 worker 進程，支持高並發
+  - 配置日誌文件：`/var/log/uvicorn/chat-react-access.log` 和 `chat-react-error.log`
+- **deployment/README.md**: 創建部署指南
+  - 包含完整的安裝步驟
+  - 提供常用 systemd 命令
+  - Nginx 反向代理配置示例
+  - WebSocket 支持配置說明
+- **backend/pyproject.toml**: 添加 gunicorn 依賴
+  - 添加 `gunicorn==23.0.0` 到依賴列表
+
 ## 2025-11-30 00:08:00
 
 ### 修復聊天消息重複顯示問題

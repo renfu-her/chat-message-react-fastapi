@@ -1,0 +1,42 @@
+[Unit]
+Description=Gunicorn with Uvicorn workers to serve chat-react backend (FastAPI)
+After=network.target
+
+[Service]
+User=ai-tracks-chat
+Group=ai-tracks-chat
+WorkingDirectory=/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend
+Environment="PATH=/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+
+# 使用 gunicorn + uvicorn workers（推薦，更好的進程管理）
+# -w: workers（工作進程數，建議設置為 CPU 核心數 * 2）
+# -k: worker class（使用 uvicorn workers）
+# -b: bind address（監聽地址和端口，匹配 Nginx proxy_pass）
+# --threads: 每個 worker 的線程數（可選，uvicorn workers 默認使用異步，通常不需要）
+# --worker-connections: 每個 worker 的最大連接數（可選）
+# --timeout: worker 超時時間（秒）
+# --graceful-timeout: 優雅關閉超時時間（秒）
+ExecStart=/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend/.venv/bin/gunicorn \
+    main:app \
+    -w 8 \
+    -k uvicorn.workers.UvicornWorker \
+    -b 127.0.0.1:8097 \
+    --threads 4 \
+    --worker-connections 1000 \
+    --timeout 120 \
+    --graceful-timeout 30 \
+    --access-logfile /var/log/uvicorn/chat-react-access.log \
+    --error-logfile /var/log/uvicorn/chat-react-error.log \
+    --log-level info \
+    --capture-output \
+    --enable-stdio-inheritance
+
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target
+
