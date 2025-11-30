@@ -108,6 +108,14 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 00:08:00
+
+### 修復聊天消息重複顯示問題
+- **frontend/components/ChatApp.tsx**: 防止重複消息
+  - 在 `NEW_MESSAGE` WebSocket 事件處理中添加重複檢查
+  - 檢查消息 ID 是否已存在，避免重複添加
+  - 將消息列表的 key 從 `msg.id || idx` 改為 `msg.id`，確保 React 正確識別重複消息
+
 ## 2025-11-30 00:05:00
 
 ### 修復用戶在線狀態綠色燈顯示問題

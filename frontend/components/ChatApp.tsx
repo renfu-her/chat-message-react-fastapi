@@ -101,6 +101,11 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         case 'NEW_MESSAGE':
           setMessages(prev => {
              if (event.payload.roomId === currentRoomId) {
+                // 檢查消息是否已存在（避免重複）
+                const exists = prev.some(msg => msg.id === event.payload.id);
+                if (exists) {
+                  return prev;
+                }
                 return [...prev, event.payload];
              }
              return prev;
@@ -455,13 +460,13 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll bg-dark">
-              {messages.map((msg, idx) => {
+              {messages.map((msg) => {
                 const isMe = msg.senderId === currentUser.id;
                 // If the sender is blocked, do not show message
                 if (currentUser.blocked?.includes(msg.senderId)) return null;
 
                 return (
-                  <div key={msg.id || idx} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div key={msg.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                     <img 
                         src={msg.senderAvatar} 
                         alt={msg.senderName} 
