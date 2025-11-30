@@ -113,11 +113,13 @@
 ### 添加生產環境部署配置
 - **deployment/uvicorn-gunicorn.service**: 創建 systemd service 文件
   - 配置 Gunicorn + Uvicorn workers 用於生產環境
+  - Service 名稱：`chat-ai-tracks-uvicorn-gunicorn.service`
+  - Description：`chat-ai-tracks: Gunicorn with Uvicorn workers to serve chat-react backend (FastAPI)`
   - 工作目錄：`/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend`
   - 用戶：`ai-tracks-chat`
   - 監聽端口：`127.0.0.1:8097`
   - 8 個 worker 進程，支持高並發
-  - 配置日誌文件：`/var/log/uvicorn/chat-react-access.log` 和 `chat-react-error.log`
+  - 配置日誌文件：`/var/log/uvicorn/chat-ai-tracks-access.log` 和 `chat-ai-tracks-error.log`
 - **deployment/nginx.conf**: 創建完整的 Nginx 配置文件
   - 支持 HTTPS 和 HTTP/2
   - `/api/` 路由代理到後端（端口 8097）

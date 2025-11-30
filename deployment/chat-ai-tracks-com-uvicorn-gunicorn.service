@@ -1,5 +1,5 @@
 [Unit]
-Description=Gunicorn with Uvicorn workers to serve chat-react backend (FastAPI)
+Description=chat-ai-tracks: Gunicorn with Uvicorn workers to serve chat-react backend (FastAPI)
 After=network.target
 
 [Service]
@@ -25,8 +25,8 @@ ExecStart=/home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend/.venv/bin/gunic
     --worker-connections 1000 \
     --timeout 120 \
     --graceful-timeout 30 \
-    --access-logfile /var/log/uvicorn/chat-react-access.log \
-    --error-logfile /var/log/uvicorn/chat-react-error.log \
+    --access-logfile /var/log/uvicorn/chat-ai-tracks-access.log \
+    --error-logfile /var/log/uvicorn/chat-ai-tracks-error.log \
     --log-level info \
     --capture-output \
     --enable-stdio-inheritance

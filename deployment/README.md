@@ -35,7 +35,7 @@ pip install gunicorn
 
 4. **複製 service 文件**：
 ```bash
-sudo cp deployment/uvicorn-gunicorn.service /etc/systemd/system/
+sudo cp deployment/chat-ai-tracks-com-uvicorn-gunicorn.service /etc/systemd/system/
 ```
 
 5. **重新加載 systemd**：
@@ -45,43 +45,43 @@ sudo systemctl daemon-reload
 
 6. **啟動服務**：
 ```bash
-sudo systemctl start uvicorn-gunicorn.service
+sudo systemctl start chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 7. **設置開機自啟**：
 ```bash
-sudo systemctl enable uvicorn-gunicorn.service
+sudo systemctl enable chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 8. **檢查服務狀態**：
 ```bash
-sudo systemctl status uvicorn-gunicorn.service
+sudo systemctl status chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 ### 常用命令
 
 - **查看日誌**：
 ```bash
-sudo journalctl -u uvicorn-gunicorn.service -f
+sudo journalctl -u chat-ai-tracks-com-uvicorn-gunicorn.service -f
 # 或查看文件日誌
-tail -f /var/log/uvicorn/chat-react-access.log
-tail -f /var/log/uvicorn/chat-react-error.log
+tail -f /var/log/uvicorn/chat-ai-tracks-access.log
+tail -f /var/log/uvicorn/chat-ai-tracks-error.log
 ```
 
 - **重啟服務**：
 ```bash
-sudo systemctl restart uvicorn-gunicorn.service
+sudo systemctl restart chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 - **停止服務**：
 ```bash
-sudo systemctl stop uvicorn-gunicorn.service
+sudo systemctl stop chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 - **重新加載配置**：
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart uvicorn-gunicorn.service
+sudo systemctl restart chat-ai-tracks-com-uvicorn-gunicorn.service
 ```
 
 ### Nginx 配置
