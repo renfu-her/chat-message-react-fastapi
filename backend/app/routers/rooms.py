@@ -6,6 +6,7 @@ from app.schemas import RoomResponse, RoomCreateRequest, RoomJoinRequest, RoomUp
 from app.dependencies import get_current_user
 from app.auth import verify_password, get_password_hash
 from app.websocket import websocket_manager
+import asyncio
 
 router = APIRouter()
 
@@ -53,6 +54,9 @@ async def create_room(
     db.commit()
     db.refresh(new_room)
     
+    # 創建者自動加入房間
+    await websocket_manager.join_room(current_user.id, new_room.id)
+    
     # 廣播房間創建事件（異步執行，避免阻塞）
     room_response = RoomResponse(
         id=new_room.id,
@@ -83,6 +87,8 @@ async def join_room(
     
     # 如果是公開房間，直接允許加入
     if not room.is_private:
+        # 記錄用戶加入房間
+        await websocket_manager.join_room(current_user.id, room_id)
         return {"message": "Joined room successfully", "room": RoomResponse(
             id=room.id,
             name=room.name,
@@ -93,6 +99,8 @@ async def join_room(
     
     # 如果是創建者，直接允許加入
     if room.created_by == current_user.id:
+        # 記錄用戶加入房間
+        await websocket_manager.join_room(current_user.id, room_id)
         return {"message": "Joined room successfully", "room": RoomResponse(
             id=room.id,
             name=room.name,
@@ -114,6 +122,9 @@ async def join_room(
             detail="Incorrect password"
         )
     
+    # 記錄用戶加入房間
+    await websocket_manager.join_room(current_user.id, room_id)
+    
     return {"message": "Joined room successfully", "room": RoomResponse(
         id=room.id,
         name=room.name,
@@ -121,6 +132,26 @@ async def join_room(
         created_by=room.created_by,
         description=room.description
     )}
+
+
+@router.post("/{room_id}/leave")
+async def leave_room(
+    room_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """離開房間"""
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Room not found"
+        )
+    
+    # 記錄用戶離開房間
+    await websocket_manager.leave_room(current_user.id, room_id)
+    
+    return {"message": "Left room successfully"}
 
 
 @router.delete("/{room_id}")
@@ -145,6 +176,15 @@ async def delete_room(
     
     db.delete(room)
     db.commit()
+    
+    # 清理所有用戶的房間關係（房間已刪除）
+    # 注意：這裡需要清理所有用戶的該房間關係
+    users_to_clean = [
+        user_id for user_id, rooms in websocket_manager.user_rooms.items()
+        if room_id in rooms
+    ]
+    for user_id in users_to_clean:
+        await websocket_manager.leave_room(user_id, room_id)
     
     # 廣播房間刪除事件（異步執行，避免阻塞）
     asyncio.create_task(websocket_manager.broadcast_room_deleted(room_id))
@@ -190,8 +230,7 @@ async def update_room(
     
     db.commit()
     db.refresh(room)
-    
-    # 廣播房間更新事件（異步執行，避免阻塞）
+
     room_response = RoomResponse(
         id=room.id,
         name=room.name,
@@ -202,4 +241,3 @@ async def update_room(
     asyncio.create_task(websocket_manager.broadcast_room_updated(room_response))
     
     return room_response
-

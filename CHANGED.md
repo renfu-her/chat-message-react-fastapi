@@ -108,6 +108,37 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 16:30:00
+
+### 實現按房間分組的 WebSocket 廣播（選項 B）
+- **backend/app/websocket.py**: 實現房間追蹤和按房間廣播
+  - 添加 `user_rooms` 字典追蹤用戶所在的房間
+  - 實現 `join_room()` 和 `leave_room()` 方法
+  - 優化 `broadcast_to_room()` 方法，只發送給房間內的用戶
+  - 更新 `broadcast_new_message()` 使用 `broadcast_to_room()` 而不是全域 `broadcast()`
+  - 在 `disconnect()` 時自動清理用戶的房間關係
+- **backend/app/routers/rooms.py**: 添加房間加入/離開追蹤
+  - 在 `create_room()` 時自動記錄創建者加入房間
+  - 在 `join_room()` 時記錄用戶加入房間
+  - 添加 `leave_room()` 端點，記錄用戶離開房間
+  - 在 `delete_room()` 時清理所有用戶的該房間關係
+- **frontend/services/api.ts**: 添加 `leaveRoom()` API 方法
+- **frontend/components/ChatApp.tsx**: 更新房間進入/離開邏輯
+  - 在 `enterRoom()` 時，如果之前在其他房間，先離開舊房間
+  - 在 `handleJoinRoom()` 中調用 `joinRoom` API 確保後端記錄
+  - 確保所有房間進入都通過 API 記錄
+
+## 2025-11-30 16:25:00
+
+### 創建 WebSocket 架構說明文檔
+- **backend/WEBSOCKET_ARCHITECTURE.md**: 創建 WebSocket 架構說明文檔
+  - 詳細說明當前全域廣播的實現方式
+  - 解釋連接管理結構（按用戶 ID 分組）
+  - 分析全域廣播 vs 按房間廣播的優缺點
+  - 提供按房間廣播的優化方案和代碼示例
+  - 性能分析和優化建議
+  - 結論：當前使用全域廣播，未來可優化為按房間廣播
+
 ## 2025-11-30 16:20:00
 
 ### 完善後端混合方案支持

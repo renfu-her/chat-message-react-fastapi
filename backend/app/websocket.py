@@ -10,6 +10,8 @@ class ConnectionManager:
     def __init__(self):
         # 存儲所有活躍連接：{user_id: [websocket1, websocket2, ...]}
         self.active_connections: Dict[str, List[WebSocket]] = {}
+        # 追蹤用戶所在的房間：{user_id: {room_id1, room_id2, ...}}
+        self.user_rooms: Dict[str, set] = {}
     
     async def connect(self, websocket: WebSocket, user_id: str):
         """建立 WebSocket 連接"""
@@ -26,6 +28,9 @@ class ConnectionManager:
                 self.active_connections[user_id].remove(websocket)
             if not self.active_connections[user_id]:
                 del self.active_connections[user_id]
+                # 清理用戶的房間關係（用戶完全離線）
+                if user_id in self.user_rooms:
+                    del self.user_rooms[user_id]
     
     async def send_personal_message(self, message: dict, user_id: str):
         """發送消息給特定用戶"""
@@ -71,11 +76,66 @@ class ConnectionManager:
             if user_id in self.active_connections and not self.active_connections[user_id]:
                 del self.active_connections[user_id]
     
+    async def join_room(self, user_id: str, room_id: str):
+        """用戶加入房間"""
+        if user_id not in self.user_rooms:
+            self.user_rooms[user_id] = set()
+        self.user_rooms[user_id].add(room_id)
+        print(f"[WebSocket] User {user_id} joined room {room_id}")
+    
+    async def leave_room(self, user_id: str, room_id: str):
+        """用戶離開房間"""
+        if user_id in self.user_rooms:
+            self.user_rooms[user_id].discard(room_id)
+            if not self.user_rooms[user_id]:
+                del self.user_rooms[user_id]
+            print(f"[WebSocket] User {user_id} left room {room_id}")
+    
     async def broadcast_to_room(self, message: dict, room_id: str):
-        """廣播消息給特定房間的所有用戶（需要從資料庫查詢房間成員）"""
-        # 這裡簡化處理，實際應該查詢房間成員
-        # 目前廣播給所有連接的用戶，前端會根據 room_id 過濾
-        await self.broadcast(message)
+        """廣播消息給特定房間的所有用戶"""
+        if not self.active_connections:
+            print(f"[WebSocket] No active connections to broadcast to room {room_id}")
+            return
+        
+        # 找到在該房間的所有用戶
+        target_users = [
+            user_id for user_id, rooms in self.user_rooms.items()
+            if room_id in rooms
+        ]
+        
+        if not target_users:
+            print(f"[WebSocket] No users in room {room_id} to broadcast")
+            return
+        
+        total_sent = 0
+        disconnected_users = []
+        
+        for user_id in target_users:
+            connections = self.active_connections.get(user_id, [])
+            disconnected = []
+            for connection in connections:
+                try:
+                    await connection.send_json(message)
+                    total_sent += 1
+                except Exception as e:
+                    print(f"[WebSocket] Error sending to user {user_id} in room {room_id}: {e}")
+                    disconnected.append(connection)
+            
+            # 清理斷開的連接
+            for conn in disconnected:
+                self.disconnect(conn, user_id)
+                if not self.active_connections.get(user_id):
+                    disconnected_users.append(user_id)
+        
+        print(f"[WebSocket] Broadcasting {message.get('type')} to room {room_id}: {len(target_users)} users, {total_sent} connections")
+        
+        # 清理空的用戶連接列表
+        for user_id in disconnected_users:
+            if user_id in self.active_connections and not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+                # 同時清理房間關係
+                if user_id in self.user_rooms:
+                    del self.user_rooms[user_id]
 
 
 # 全局 WebSocket 管理器
@@ -102,7 +162,7 @@ async def get_user_from_token(token: str) -> User | None:
 
 # 添加廣播方法到 ConnectionManager
 async def broadcast_new_message(self, message):
-    """廣播新消息事件"""
+    """廣播新消息事件（只發送給該房間的用戶）"""
     event = {
         "type": "NEW_MESSAGE",
         "payload": {
@@ -116,7 +176,8 @@ async def broadcast_new_message(self, message):
             "timestamp": message.timestamp.isoformat() if hasattr(message.timestamp, 'isoformat') else str(message.timestamp)
         }
     }
-    await self.broadcast(event)
+    # 使用按房間廣播，只發送給該房間的用戶
+    await self.broadcast_to_room(event, message.room_id)
 
 
 async def broadcast_room_created(self, room):

@@ -247,8 +247,13 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         return;
     }
 
-    // 公開房間或創建者，直接進入（不需要調用 join API，因為後端會自動允許）
-    await enterRoom(room.id);
+    // 公開房間或創建者，調用 join API 確保後端記錄
+    try {
+      await api.joinRoom(room.id);
+      await enterRoom(room.id);
+    } catch (error) {
+      console.error('Failed to join room:', error);
+    }
   };
 
   const submitPassword = async (e: FormEvent) => {
@@ -256,6 +261,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     if (!pendingRoom) return;
 
     try {
+        // joinRoom API 會自動記錄用戶加入房間
         await api.joinRoom(pendingRoom.id, joinPassword);
         await enterRoom(pendingRoom.id);
         setShowPasswordModal(false);
@@ -266,8 +272,22 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   };
 
   const enterRoom = async (roomId: string) => {
+    // 如果已經在該房間，不需要重新加入
+    if (activeRoomId === roomId) return;
+    
+    // 如果之前在其他房間，先離開
+    if (activeRoomId) {
+      try {
+        await api.leaveRoom(activeRoomId);
+      } catch (error) {
+        console.error('Failed to leave previous room:', error);
+      }
+    }
+    
     setActiveRoomId(roomId);
     try {
+      // 確保用戶已加入房間（公開房間或創建者會自動加入）
+      // 如果是私有房間且不是創建者，應該已經通過 joinRoom API 加入
       const msgs = await api.getMessages(roomId);
       setMessages(msgs);
     } catch (error) {
@@ -990,7 +1010,7 @@ const AccordionSection: React.FC<{ title: string, icon: React.ReactNode, isActiv
 
 // Inner Components for Settings
 
-const ProfileForm: React.FC<{ user: User, onClose: () => void }> = ({ user, onClose }) => {
+const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (user: User) => void }> = ({ user, onClose, onUserUpdate }) => {
     const [name, setName] = useState(user.name);
     const [avatar, setAvatar] = useState(user.avatar);
     const [password, setPassword] = useState('');

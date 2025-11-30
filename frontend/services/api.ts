@@ -351,6 +351,8 @@ export const api = {
       body: JSON.stringify({ password }),
     });
     
+    // 後端會自動記錄用戶加入房間（WebSocket 追蹤）
+    
     return {
       id: response.room.id,
       name: response.room.name,
@@ -358,6 +360,13 @@ export const api = {
       createdBy: response.room.created_by,
       description: response.room.description,
     };
+  },
+
+  async leaveRoom(roomId: string): Promise<void> {
+    await apiRequest(`/rooms/${roomId}/leave`, {
+      method: 'POST',
+    });
+    // 後端會自動記錄用戶離開房間（WebSocket 追蹤）
   },
 
       async deleteRoom(roomId: string): Promise<void> {
