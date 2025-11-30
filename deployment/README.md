@@ -10,36 +10,50 @@ sudo mkdir -p /var/log/uvicorn
 sudo chown ai-tracks-chat:ai-tracks-chat /var/log/uvicorn
 ```
 
-2. **安裝 gunicorn**（如果尚未安裝）：
+2. **安裝 uv**（如果尚未安裝）：
 ```bash
-cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend
-source .venv/bin/activate
-pip install gunicorn
-# 或使用 uv
-uv add gunicorn
+# 安裝 uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 將 uv 添加到 PATH（永久）
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# 驗證安裝
+uv --version
 ```
 
-3. **複製 service 文件**：
+3. **安裝 gunicorn**（如果尚未安裝）：
+```bash
+cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend
+# 使用 uv 安裝（推薦）
+uv add gunicorn
+# 或使用傳統方式
+source .venv/bin/activate
+pip install gunicorn
+```
+
+4. **複製 service 文件**：
 ```bash
 sudo cp deployment/uvicorn-gunicorn.service /etc/systemd/system/
 ```
 
-4. **重新加載 systemd**：
+5. **重新加載 systemd**：
 ```bash
 sudo systemctl daemon-reload
 ```
 
-5. **啟動服務**：
+6. **啟動服務**：
 ```bash
 sudo systemctl start uvicorn-gunicorn.service
 ```
 
-6. **設置開機自啟**：
+7. **設置開機自啟**：
 ```bash
 sudo systemctl enable uvicorn-gunicorn.service
 ```
 
-7. **檢查服務狀態**：
+8. **檢查服務狀態**：
 ```bash
 sudo systemctl status uvicorn-gunicorn.service
 ```
