@@ -108,6 +108,24 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 11:50:00
+
+### 添加前端部署配置（使用 pnpm）
+- **deployment/frontend-deploy.md**: 創建前端部署指南
+  - 使用 pnpm 構建和部署前端應用
+  - 包含 pnpm 安裝說明
+  - 構建步驟和驗證方法
+  - 環境變量配置說明
+  - 故障排除指南
+- **deployment/deploy-frontend.sh**: 創建自動化部署腳本
+  - 自動檢查 pnpm 是否安裝
+  - 安裝依賴和構建生產版本
+  - 驗證構建結果
+  - 顯示構建文件信息
+- **deployment/README.md**: 更新部署指南
+  - 添加前端部署快速步驟
+  - 引用前端部署文檔
+
 ## 2025-11-30 00:10:00
 
 ### 添加生產環境部署配置

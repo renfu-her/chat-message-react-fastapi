@@ -119,10 +119,48 @@ sudo systemctl reload nginx
 - 支持 HTTPS 和 HTTP/2
 - 靜態資源緩存優化
 
+### 故障排除
+
+如果服務啟動失敗，請參考 [troubleshooting.md](troubleshooting.md) 進行診斷。
+
+**快速診斷命令**：
+```bash
+# 查看詳細錯誤日誌
+sudo journalctl -u chat-ai-tracks-com-uvicorn-gunicorn.service -n 50 --no-pager
+
+# 手動測試服務（以 ai-tracks-chat 用戶身份）
+su - ai-tracks-chat
+cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/backend
+source .venv/bin/activate
+gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8097
+```
+
+## Frontend 部署
+
+詳細的前端部署說明請參考 [frontend-deploy.md](frontend-deploy.md)
+
+### 快速部署步驟
+
+```bash
+# 1. 進入前端目錄
+cd /home/ai-tracks-chat/htdocs/chat.ai-tracks.com/frontend
+
+# 2. 安裝依賴（使用 pnpm）
+pnpm install
+
+# 3. 構建生產版本
+pnpm build
+
+# 4. 構建文件會生成在 dist/ 目錄
+# Nginx 會自動服務這些靜態文件（已配置在 nginx.conf 中）
+```
+
 ### 注意事項
 
 1. **端口配置**：確保 service 文件中的端口（8097）與 Nginx 配置一致
 2. **用戶權限**：確保 `ai-tracks-chat` 用戶有權限訪問項目目錄和日誌目錄
 3. **環境變量**：如果需要環境變量，可以在 `[Service]` 部分添加 `Environment` 指令
 4. **Workers 數量**：根據服務器 CPU 核心數調整 `-w` 參數（建議為 CPU 核心數 * 2）
+5. **依賴檢查**：確保 gunicorn 已安裝在虛擬環境中：`uv add gunicorn` 或 `pip install gunicorn`
+6. **前端構建**：使用 `pnpm build` 構建前端，構建後的靜態文件在 `frontend/dist/` 目錄
 
