@@ -19,7 +19,8 @@ class ConnectionManager:
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)
-        print(f"[WebSocket] User {user_id} connected. Total users: {len(self.active_connections)}, Total connections: {sum(len(conns) for conns in self.active_connections.values())}")
+        total_connections = sum(len(conns) for conns in self.active_connections.values())
+        print(f"[WebSocket] User {user_id} connected. Total users: {len(self.active_connections)}, Total connections: {total_connections}")
     
     def disconnect(self, websocket: WebSocket, user_id: str):
         """斷開 WebSocket 連接"""
@@ -314,6 +315,24 @@ async def handle_websocket(websocket: WebSocket):
     
     # 建立連接
     await websocket_manager.connect(websocket, user.id)
+    
+    # 確保用戶在線狀態已更新並廣播
+    db = SessionLocal()
+    try:
+        db_user = db.query(User).filter(User.id == user.id).first()
+        if db_user and not db_user.is_online:
+            # 如果用戶狀態不是在線，更新為在線並廣播
+            db_user.is_online = True
+            db.commit()
+            db.refresh(db_user)
+            print(f"[WebSocket] User {user.id} marked as online via WebSocket connection")
+            # 廣播用戶上線事件
+            await websocket_manager.broadcast_user_update(db_user)
+    except Exception as e:
+        print(f"[WebSocket] Error updating user online status: {e}")
+        db.rollback()
+    finally:
+        db.close()
     
     try:
         while True:

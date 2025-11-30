@@ -213,7 +213,19 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
           break;
         case 'USER_JOINED':
           setUsers(prev => {
-            if (prev.some(u => u.id === event.payload.id)) return prev;
+            // 如果用戶已存在，更新其狀態；否則添加新用戶
+            const existingIndex = prev.findIndex(u => u.id === event.payload.id);
+            if (existingIndex >= 0) {
+              // 更新現有用戶為在線
+              const updated = [...prev];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                ...event.payload,
+                isOnline: event.payload.isOnline ?? event.payload.is_online ?? true,
+              };
+              return updated;
+            }
+            // 添加新用戶
             return [...prev, {
               ...event.payload,
               isOnline: event.payload.isOnline ?? event.payload.is_online ?? true,
@@ -221,7 +233,18 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
           });
           break;
         case 'USER_LEFT':
-          setUsers(prev => prev.map(u => u.id === event.payload.userId ? { ...u, isOnline: false } : u));
+          setUsers(prev => prev.map(u => 
+            u.id === event.payload.userId 
+              ? { ...u, isOnline: false } 
+              : u
+          ));
+          // 如果離線的是當前用戶，也更新當前用戶狀態
+          if (event.payload.userId === currentUser.id) {
+            onUserUpdate({
+              ...currentUser,
+              isOnline: false,
+            });
+          }
           break;
       }
     });

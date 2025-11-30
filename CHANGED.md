@@ -108,6 +108,18 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 17:50:00
+
+### 優化成員在線狀態監控
+- **backend/app/websocket.py**: 改進 WebSocket 連接時的用戶狀態處理
+  - 在 WebSocket 連接建立時，檢查並更新用戶在線狀態
+  - 如果用戶狀態不是「在線」，自動更新為「在線」並廣播 `USER_UPDATE` 事件
+  - 確保所有通過 WebSocket 連接的用戶都能正確更新狀態
+- **frontend/components/ChatApp.tsx**: 優化前端用戶狀態更新邏輯
+  - 改進 `USER_JOINED` 事件處理：如果用戶已存在，更新其狀態而不是跳過
+  - 改進 `USER_LEFT` 事件處理：如果離線的是當前用戶，也更新當前用戶狀態
+  - 確保用戶列表中的在線狀態（綠色指示燈）能正確顯示和更新
+
 ## 2025-11-30 16:30:00
 
 ### 實現按房間分組的 WebSocket 廣播（選項 B）
