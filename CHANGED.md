@@ -108,6 +108,17 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 16:05:00
+
+### 確認並完善 WebSocket 事件連接
+- **backend/app/routers/auth.py**: 添加登入時的 USER_UPDATE 事件
+  - 在 `login()` 函數中，登入成功後廣播 `USER_UPDATE` 事件
+  - 確保其他用戶能看到該用戶從離線變為在線的狀態
+- **backend/WEBSOCKET_EVENTS.md**: 創建 WebSocket 事件文檔
+  - 列出所有已實現的 WebSocket 事件
+  - 說明每個事件的觸發時機、後端位置、前端處理和事件格式
+  - 包含檢查清單確認所有事件都已實現並連接
+
 ## 2025-11-30 16:00:00
 
 ### 完善用戶離線狀態處理（登出和關閉瀏覽器）

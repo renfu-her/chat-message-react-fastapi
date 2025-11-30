@@ -52,6 +52,10 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         "blocked": blocked
     }
     
+    # 廣播用戶更新事件（異步執行，避免阻塞）
+    import asyncio
+    asyncio.create_task(websocket_manager.broadcast_user_update(user))
+    
     return TokenResponse(
         access_token=access_token,
         user=UserResponse(**user_dict)
