@@ -108,6 +108,17 @@
   - 後端 `sender_avatar` → 前端 `senderAvatar`
   - 後端 `room_name` → 前端 `roomName`
 
+## 2025-11-30 12:15:00
+
+### 創建 index.css 文件
+- **frontend/index.css**: 創建獨立的 CSS 文件
+  - 將 `index.html` 中的內聯樣式移到獨立的 CSS 文件
+  - 包含 CSS 變量定義（亮色/暗色主題）
+  - 包含自定義滾動條樣式
+- **frontend/index.html**: 移除內聯樣式
+  - 移除 `<style>` 標籤中的樣式定義
+  - 保留對 `index.css` 的引用
+
 ## 2025-11-30 12:10:00
 
 ### 將前端 API 配置改為使用環境變量
