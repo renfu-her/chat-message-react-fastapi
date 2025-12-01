@@ -1088,7 +1088,13 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
     const handleSave = async (e: FormEvent) => {
         e.preventDefault();
         try {
-            const updates: Partial<User> = { name, avatar };
+            // 只發送 name 和 password，avatar 已經通過 uploadAvatar 更新
+            // 如果 avatar 是 base64，不發送（應該已經通過 uploadAvatar 上傳為文件）
+            const updates: Partial<User> = { name };
+            // 只有在 avatar 是 URL（不是 base64）時才發送
+            if (avatar && !avatar.startsWith('data:image')) {
+                updates.avatar = avatar;
+            }
             if (password.trim()) {
                 updates.password = password;
             }

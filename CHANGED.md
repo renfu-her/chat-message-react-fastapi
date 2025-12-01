@@ -1,5 +1,17 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 14:48:16
+
+### 確保用戶頭像只使用實體文件
+- **backend/app/routers/users.py**: 拒絕 base64 格式的頭像
+  - 在 `update_profile` 中檢查，如果 avatar 是 base64（`data:image` 開頭），拒絕更新
+  - 驗證 avatar URL 格式，必須是 `/api/uploads/` 或 `http(s)://` 開頭
+  - 確保所有頭像都通過文件上傳端點上傳，存儲為實體文件
+- **frontend/components/ChatApp.tsx**: 改進頭像保存邏輯
+  - 在 `handleSave` 中，只在頭像是 URL（不是 base64）時才發送到 `updateProfile`
+  - 如果頭像是 base64，不發送（應該已經通過 `uploadAvatar` 上傳為文件）
+  - 確保用戶頭像始終存儲為實體文件，資料庫只存儲 URL
+
 ## 2025-12-01 14:47:08
 
 ### 實現圖片文件上傳功能（實體文件存儲）

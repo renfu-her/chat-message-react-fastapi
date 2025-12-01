@@ -73,11 +73,17 @@ async def update_profile(
         if request.name is not None:
             current_user.name = request.name
         if request.avatar is not None:
-            # 驗證 avatar 長度（雖然已改為 Text，但仍建議限制大小）
-            if len(request.avatar) > 10 * 1024 * 1024:  # 10MB 限制
+            # 檢查是否為 base64 數據（不允許）
+            if request.avatar.startswith('data:image'):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Avatar image is too large. Maximum size is 10MB."
+                    detail="Base64 images are not allowed. Please use the upload endpoint to upload avatar as a file."
+                )
+            # 驗證 avatar URL 格式（應該是 /api/uploads/avatars/... 或 http(s)://...）
+            if not (request.avatar.startswith('/api/uploads/') or request.avatar.startswith('http://') or request.avatar.startswith('https://')):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid avatar URL format. Avatar must be uploaded via the upload endpoint."
                 )
             current_user.avatar = request.avatar
         if request.bio is not None:
