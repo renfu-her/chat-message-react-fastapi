@@ -10,7 +10,12 @@ import 'presentation/chat/chat_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    // .env file not found, use default values from AppConfig
+    print('Warning: .env file not found, using default configuration');
+  }
   runApp(const ChatApp());
 }
 
@@ -83,9 +88,11 @@ class _RootNavigatorState extends State<_RootNavigator> {
     return MaterialApp(
       title: 'Chat App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
-        brightness: Brightness.dark,
       ),
       home: !_bootstrapped
           ? const Scaffold(

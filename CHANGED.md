@@ -1,5 +1,53 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 22:27:30
+
+### 修復 Flutter 主題配置錯誤（ThemeData.brightness 與 ColorScheme.brightness 不匹配）
+- **app/lib/main.dart**: 修復主題配置衝突
+  - 將 `brightness: Brightness.dark` 從 `ThemeData` 移到 `ColorScheme.fromSeed()` 參數中
+  - 使用 `ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark)` 明確指定 brightness
+  - 移除 `ThemeData` 中的 `brightness` 屬性，避免與 `ColorScheme.brightness` 衝突
+- **問題解決**：
+  - 解決了 `ThemeData.brightness does not match ColorScheme.brightness` 的運行時錯誤
+  - 應用現在可以正常啟動並顯示深色主題界面
+
+## 2025-12-01 22:24:51
+
+### 修復 Flutter 應用啟動時找不到 .env 文件的錯誤
+- **app/lib/main.dart**: 改進 `.env` 文件載入處理
+  - 添加 try-catch 包裹 `dotenv.load()`，當文件不存在時不會拋出異常
+  - 如果 `.env` 文件不存在，使用 `AppConfig` 中的默認值
+  - 添加警告日誌提示使用默認配置
+- **app/.env**: 創建環境變數配置文件
+  - `API_BASE_URL=http://localhost:8000/api` - API 基礎 URL
+  - `WS_BASE_URL=ws://localhost:8000` - WebSocket 基礎 URL
+  - 提供開發環境的默認配置
+- **問題解決**：
+  - 解決了 `FileNotFoundError` 導致的應用啟動失敗
+  - 應用現在可以在沒有 `.env` 文件的情況下正常啟動（使用默認值）
+  - 如果存在 `.env` 文件，會優先使用文件中的配置
+
+## 2025-12-01 22:21:49
+
+### Flutter 應用執行指南
+- **執行步驟**：
+  1. 進入 `app` 目錄：`cd app`
+  2. 安裝依賴：`flutter pub get`
+  3. 檢查可用設備：`flutter devices`
+  4. 啟動模擬器（如果需要）：`flutter emulators --launch <emulator_id>`
+     - 可用模擬器：`Medium_Phone_API_35`、`Pixel_7_Pro`
+  5. 執行應用：
+     - 在特定設備上運行：`flutter run -d <device_id>`
+     - 自動選擇設備：`flutter run`
+- **可用設備類型**：
+  - Android 模擬器（如 `emulator-5554`）
+  - Windows 桌面應用
+  - Chrome/Edge 網頁版
+- **注意事項**：
+  - 確保 Flutter 環境已正確安裝（`flutter doctor`）
+  - 模擬器需要先啟動才能被檢測到
+  - 應用會在後台運行，可以通過終端查看日誌
+
 ## 2025-12-01 17:27:27
 
 ### 建立 Flutter `app` 專案並對齊現有 React 架構
