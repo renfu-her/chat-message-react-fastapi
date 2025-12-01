@@ -142,9 +142,10 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
       
       switch (event.type) {
         case 'NEW_MESSAGE':
+        case 'IMAGE_UPLOADED': // 處理圖片上傳事件（與 NEW_MESSAGE 相同處理）
           // 確保消息格式正確
           if (!event.payload || !event.payload.id) {
-            console.warn('[ChatApp] Invalid NEW_MESSAGE payload:', event.payload);
+            console.warn('[ChatApp] Invalid NEW_MESSAGE/IMAGE_UPLOADED payload:', event.payload);
             break;
           }
           
@@ -157,8 +158,17 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
                   console.log('[ChatApp] Message already exists, skipping:', event.payload.id);
                   return prev;
                 }
-                console.log('[ChatApp] Adding new message to current room:', event.payload.id);
-                return [...prev, event.payload];
+                console.log('[ChatApp] Adding new message to current room:', event.payload.id, 'type:', event.type);
+                
+                // 確保 timestamp 是數字
+                const message = {
+                  ...event.payload,
+                  timestamp: typeof event.payload.timestamp === 'string' 
+                    ? new Date(event.payload.timestamp).getTime() 
+                    : event.payload.timestamp || Date.now()
+                };
+                
+                return [...prev, message];
              } else {
                // 即使不是當前房間的消息，也記錄日誌以便調試
                console.log('[ChatApp] Message received for different room:', event.payload.roomId, 'current:', currentRoomId);
@@ -368,10 +378,40 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     const file = e.target.files?.[0];
     if (!file || !activeRoomId) return;
 
+    // 創建臨時消息 ID（用於樂觀更新）
+    const tempMessageId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
       // 上傳文件到服務器，獲取 URL
       const imageUrl = await api.uploadMessageImage(file);
-      await api.sendMessage({
+      
+      // 樂觀更新：立即將圖片消息添加到本地狀態
+      const tempMessage: Message = {
+        id: tempMessageId,
+        roomId: activeRoomId,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderAvatar: currentUser.avatar,
+        content: imageUrl,
+        type: 'image',
+        timestamp: Date.now()
+      };
+      
+      // 立即添加到消息列表（樂觀更新）
+      setMessages(prev => {
+        // 檢查是否已存在（避免重複）
+        const exists = prev.some(msg => msg.id === tempMessageId);
+        if (exists) return prev;
+        return [...prev, tempMessage];
+      });
+      
+      // 滾動到底部
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      
+      // 發送消息到服務器
+      const sentMessage = await api.sendMessage({
         roomId: activeRoomId,
         senderId: currentUser.id,
         senderName: currentUser.name,
@@ -379,8 +419,28 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         content: imageUrl, // 使用圖片 URL 而不是 base64
         type: 'image'
       });
+      
+      // 用真實消息替換臨時消息
+      setMessages(prev => {
+        // 移除臨時消息
+        const filtered = prev.filter(msg => msg.id !== tempMessageId);
+        // 檢查真實消息是否已存在（可能通過 WebSocket 已經收到）
+        const exists = filtered.some(msg => msg.id === sentMessage.id);
+        if (exists) return filtered;
+        // 添加真實消息
+        return [...filtered, {
+          ...sentMessage,
+          timestamp: new Date(sentMessage.timestamp).getTime()
+        }];
+      });
+      
+      console.log('[ChatApp] Image message sent successfully:', sentMessage.id);
     } catch (err: any) {
       console.error("Image upload failed", err);
+      
+      // 移除臨時消息（如果上傳失敗）
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
+      
       alert(err.message || "Failed to upload image");
     } finally {
       if(fileInputRef.current) fileInputRef.current.value = '';
@@ -656,8 +716,29 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
                             p-1 rounded-lg overflow-hidden border border-border-base
                             ${isMe ? 'bg-primary/20' : 'bg-paper'}
                         `}>
-                            <img src={msg.content} alt="Shared" className="max-w-full rounded h-auto max-h-64 object-contain" />
-                            <div className="text-[10px] text-center w-full text-txt-muted mt-1 uppercase tracking-wider">WEBP Generated</div>
+                            <img 
+                              src={msg.content} 
+                              alt="Shared image" 
+                              className="max-w-full rounded h-auto max-h-64 object-contain"
+                              onLoad={() => {
+                                console.log('[ChatApp] Image loaded successfully:', msg.content);
+                              }}
+                              onError={(e) => {
+                                console.error('[ChatApp] Image load failed:', msg.content);
+                                const target = e.target as HTMLImageElement;
+                                // 顯示錯誤提示
+                                target.style.display = 'none';
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'text-xs text-red-400 p-2 text-center';
+                                errorDiv.textContent = 'Failed to load image';
+                                target.parentElement?.appendChild(errorDiv);
+                              }}
+                            />
+                            {msg.id.startsWith('temp-') && (
+                              <div className="text-[10px] text-center w-full text-txt-muted mt-1 uppercase tracking-wider animate-pulse">
+                                Uploading...
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>
