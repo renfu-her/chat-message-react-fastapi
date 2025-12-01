@@ -1,24 +1,11 @@
 # 變更記錄 (Change Log)
 
-## 2025-12-01 12:03:00
-
-### 將 avatar 欄位升級為 LONGTEXT
-- **backend/app/models.py**: 將 avatar 欄位從 `Text` 升級為 `LONGTEXT`
-  - 導入 `sqlalchemy.dialects.mysql.LONGTEXT`
-  - 將 `User.avatar` 改為 `LONGTEXT` 類型（最大 4GB）
-  - 將 `Message.sender_avatar` 改為 `LONGTEXT` 類型（最大 4GB）
-  - 解決 71 KB 圖片超過 TEXT 64 KB 限制的問題
-- **backend/migrate_avatar_to_text.py**: 更新遷移腳本
-  - 將遷移目標從 `TEXT` 改為 `LONGTEXT`
-  - 支持從 `VARCHAR(500)` 或 `TEXT` 遷移到 `LONGTEXT`
-  - 自動檢測當前類型並跳過已為 LONGTEXT 的欄位
-
 ## 2025-12-01 11:33:00
 
 ### 添加資料庫遷移腳本
 - **backend/migrate_avatar_to_text.py**: 創建資料庫遷移腳本
   - 自動檢測並更新 `users.avatar` 和 `messages.sender_avatar` 欄位類型
-  - 從 `VARCHAR(500)` 遷移到 `TEXT` 類型（後續已升級為 LONGTEXT）
+  - 從 `VARCHAR(500)` 遷移到 `TEXT` 類型
   - 包含錯誤處理和狀態檢查
   - 使用方式：`uv run python migrate_avatar_to_text.py`
 

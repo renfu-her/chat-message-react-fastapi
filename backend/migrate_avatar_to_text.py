@@ -1,15 +1,15 @@
 """
-資料庫遷移腳本：將 avatar 欄位從 VARCHAR(500)/TEXT 改為 LONGTEXT
+資料庫遷移腳本：將 avatar 欄位從 VARCHAR(500) 改為 TEXT
 
 此腳本用於更新現有資料庫結構，將 users.avatar 和 messages.sender_avatar 
-改為 LONGTEXT 類型，以支持更大的 base64 編碼圖片（最大 4GB）。
+從 VARCHAR(500) 改為 TEXT 類型，以支持更長的 base64 編碼圖片。
 """
 import sys
 import pymysql
 from app.config import settings
 
 def migrate_avatar_columns():
-    """執行遷移：將 avatar 欄位改為 LONGTEXT"""
+    """執行遷移：將 avatar 欄位改為 TEXT"""
     connection = None
     try:
         # 連接到資料庫
@@ -38,12 +38,12 @@ def migrate_avatar_columns():
             result = cursor.fetchone()
             if result:
                 current_type = result[0].upper()
-                if 'LONGTEXT' in current_type:
-                    print("[OK] users.avatar 已經是 LONGTEXT 類型，跳過")
+                if 'TEXT' in current_type:
+                    print("[OK] users.avatar 已經是 TEXT 類型，跳過")
                 else:
-                    print(f"  發現 users.avatar 為 {result[0]}，正在修改為 LONGTEXT...")
-                    cursor.execute("ALTER TABLE users MODIFY COLUMN avatar LONGTEXT NOT NULL")
-                    print("[OK] users.avatar 已更新為 LONGTEXT")
+                    print(f"  發現 users.avatar 為 {result[0]}，正在修改為 TEXT...")
+                    cursor.execute("ALTER TABLE users MODIFY COLUMN avatar TEXT NOT NULL")
+                    print("[OK] users.avatar 已更新為 TEXT")
             else:
                 print("[WARN] 未找到 users.avatar 欄位，可能表不存在")
             
@@ -59,12 +59,12 @@ def migrate_avatar_columns():
             result = cursor.fetchone()
             if result:
                 current_type = result[0].upper()
-                if 'LONGTEXT' in current_type:
-                    print("[OK] messages.sender_avatar 已經是 LONGTEXT 類型，跳過")
+                if 'TEXT' in current_type:
+                    print("[OK] messages.sender_avatar 已經是 TEXT 類型，跳過")
                 else:
-                    print(f"  發現 messages.sender_avatar 為 {result[0]}，正在修改為 LONGTEXT...")
-                    cursor.execute("ALTER TABLE messages MODIFY COLUMN sender_avatar LONGTEXT NOT NULL")
-                    print("[OK] messages.sender_avatar 已更新為 LONGTEXT")
+                    print(f"  發現 messages.sender_avatar 為 {result[0]}，正在修改為 TEXT...")
+                    cursor.execute("ALTER TABLE messages MODIFY COLUMN sender_avatar TEXT NOT NULL")
+                    print("[OK] messages.sender_avatar 已更新為 TEXT")
             else:
                 print("[WARN] 未找到 messages.sender_avatar 欄位，可能表不存在")
             
