@@ -546,7 +546,17 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
         {/* Current User footer */}
         <div className="p-4 border-t border-border-base bg-darker/50 flex items-center justify-between">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowSettings(true)} title="Settings & Profile">
-                <img src={currentUser.avatar} alt="Me" className="w-8 h-8 rounded-full bg-slate-600 object-cover" />
+                <img 
+                    src={currentUser.avatar} 
+                    alt="Me" 
+                    className="w-8 h-8 rounded-full bg-slate-600 object-cover" 
+                    key={`avatar-${currentUser.id}-${currentUser.avatar?.substring(0, 50)}`}
+                    onError={(e) => {
+                        // 如果圖片加載失敗，使用默認頭像
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(currentUser.name)}`;
+                    }}
+                />
                 <div className="flex flex-col">
                     <span className="text-sm font-bold text-txt-main">{currentUser.name}</span>
                     <span className="text-xs text-txt-muted">{maskEmail(currentUser.email)}</span>
@@ -1055,6 +1065,15 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
             const updatedUser = await api.updateProfile(user.id, updates);
             if (onUserUpdate) {
                 onUserUpdate(updatedUser);
+            }
+            // 從服務器重新獲取最新的用戶信息，確保圖片是最新的
+            try {
+                const latestUser = await api.getCurrentUser();
+                if (onUserUpdate) {
+                    onUserUpdate(latestUser);
+                }
+            } catch (err) {
+                console.warn('Failed to refresh user data, using updated user:', err);
             }
             onClose();
             alert("Profile updated successfully");
