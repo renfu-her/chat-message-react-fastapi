@@ -1037,6 +1037,13 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
     const [name, setName] = useState(user.name);
     const [avatar, setAvatar] = useState(user.avatar);
     const [password, setPassword] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    
+    // 當 user prop 更新時，同步更新本地狀態
+    useEffect(() => {
+        setName(user.name);
+        setAvatar(user.avatar);
+    }, [user]);
     
     const handleSave = async (e: FormEvent) => {
         e.preventDefault();
@@ -1059,11 +1066,14 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setIsUploading(true);
             try {
                 const webp = await convertImageToWebP(file);
-                setAvatar(webp);
+                setAvatar(webp); // 立即更新顯示
             } catch(e) {
                 alert("Failed to process avatar image");
+            } finally {
+                setIsUploading(false);
             }
         }
     };
@@ -1072,13 +1082,32 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
         <form onSubmit={handleSave} className="space-y-4">
             <div className="flex flex-col items-center mb-4">
                 <div className="relative group cursor-pointer w-20 h-20 mb-2">
-                    <img src={avatar} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-primary" />
+                    {isUploading ? (
+                        <div className="w-full h-full rounded-full bg-darker flex items-center justify-center border-2 border-primary">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    ) : (
+                        <img 
+                            src={avatar} 
+                            alt="Profile" 
+                            className="w-full h-full rounded-full object-cover border-2 border-primary transition-opacity"
+                            key={avatar} // 強制重新渲染以確保圖片更新
+                        />
+                    )}
                     <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                         <ImageIcon size={20} className="text-white" />
                     </div>
-                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleAvatarUpload} />
+                    <input 
+                        type="file" 
+                        className="absolute inset-0 opacity-0 cursor-pointer" 
+                        accept="image/*" 
+                        onChange={handleAvatarUpload}
+                        disabled={isUploading}
+                    />
                 </div>
-                <span className="text-xs text-txt-muted">Click to change (WebP)</span>
+                <span className="text-xs text-txt-muted">
+                    {isUploading ? "Processing image..." : "Click to change (WebP)"}
+                </span>
             </div>
 
             <div>
