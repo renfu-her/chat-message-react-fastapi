@@ -50,8 +50,10 @@ app.include_router(realtime.router, prefix="/api/realtime", tags=["實時通信"
 app.include_router(upload.router, prefix="/api/upload", tags=["文件上傳"])
 
 # 靜態文件服務（提供上傳的文件訪問）
-upload_dir = Path(settings.UPLOAD_DIR)
+# 使用絕對路徑，確保在不同工作目錄下都能正確訪問
+upload_dir = Path(settings.UPLOAD_DIR).resolve()
 upload_dir.mkdir(parents=True, exist_ok=True)
+print(f"[StaticFiles] Mounting uploads directory: {upload_dir}")
 app.mount("/api/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 # WebSocket 端點

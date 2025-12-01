@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { User, Room, Message } from '../types';
 import { api } from '../services/api';
-import { convertImageToWebP } from '../services/imageUtils';
+// convertImageToWebP 不再需要，後端會自動轉換為 WebP
 
 interface ChatAppProps {
   currentUser: User;
