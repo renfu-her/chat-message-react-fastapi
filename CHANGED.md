@@ -1,5 +1,18 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 14:32:06
+
+### 修復 Profile 圖片未更新問題
+- **frontend/components/ChatApp.tsx**: 實現可靠的圖片重新加載機制
+  - 添加 `avatarVersion` 狀態來追蹤頭像版本，當頭像更新時增加版本號
+  - 添加 `useEffect` 監聽 `currentUser.avatar` 的變化，自動增加版本號強制重新加載
+  - 使用 `useRef` 保存前一個頭像值，避免不必要的更新
+  - 對於 base64 圖片，在 URL 後添加 `#v${avatarVersion}` 片段來強制重新加載
+  - 對於 URL 圖片，添加 `_t=${avatarVersion}` 查詢參數來強制重新加載
+  - 改進 `handleSave` 使用 Promise 處理 alert，確保在 alert 關閉後重新獲取用戶信息
+  - 在 WebSocket `USER_UPDATE` 事件中，檢測頭像變化並增加版本號
+  - 確保圖片在保存成功並點擊 "OK" 後立即更新顯示
+
 ## 2025-12-01 14:27:43
 
 ### 改進圖片重新讀取機制

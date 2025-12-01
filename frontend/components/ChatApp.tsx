@@ -21,6 +21,7 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [avatarVersion, setAvatarVersion] = useState(0); // 用於強制圖片重新加載
   
   // UI State
   const [showCreateRoom, setShowCreateRoom] = useState(false);
@@ -50,6 +51,15 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
   useEffect(() => {
     activeRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
+
+  // 監聽 currentUser.avatar 的變化，強制重新加載圖片
+  const prevAvatarRef = useRef<string | undefined>(currentUser.avatar);
+  useEffect(() => {
+    if (currentUser.avatar && currentUser.avatar !== prevAvatarRef.current) {
+      setAvatarVersion(prev => prev + 1);
+      prevAvatarRef.current = currentUser.avatar;
+    }
+  }, [currentUser.avatar]);
 
   // 處理瀏覽器關閉或頁面卸載時標記用戶離線
   useEffect(() => {
@@ -209,6 +219,10 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
               ...event.payload,
               isOnline: event.payload.isOnline ?? event.payload.is_online ?? currentUser.isOnline,
             });
+            // 如果頭像更新了，增加版本號以強制重新加載
+            if (event.payload.avatar && event.payload.avatar !== currentUser.avatar) {
+              setAvatarVersion(prev => prev + 1);
+            }
           }
           break;
         case 'USER_JOINED':
@@ -548,12 +562,12 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowSettings(true)} title="Settings & Profile">
                 <img 
                     src={currentUser.avatar?.startsWith('data:') 
-                        ? currentUser.avatar 
-                        : `${currentUser.avatar}${currentUser.avatar?.includes('?') ? '&' : '?'}_t=${Date.now()}`
+                        ? `${currentUser.avatar}${avatarVersion > 0 ? `#v${avatarVersion}` : ''}`
+                        : `${currentUser.avatar}${currentUser.avatar?.includes('?') ? '&' : '?'}_t=${avatarVersion || Date.now()}`
                     }
                     alt="Me" 
                     className="w-8 h-8 rounded-full bg-slate-600 object-cover" 
-                    key={`avatar-${currentUser.id}-${currentUser.avatar?.substring(0, 100)}-${Date.now()}`}
+                    key={`avatar-${currentUser.id}-${avatarVersion}-${currentUser.avatar?.substring(0, 50)}`}
                     onError={(e) => {
                         // 如果圖片加載失敗，使用默認頭像
                         const target = e.target as HTMLImageElement;
@@ -1070,20 +1084,23 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
                 onUserUpdate(updatedUser);
             }
             onClose();
-            alert("Profile updated successfully");
             
-            // 在 alert 關閉後，從服務器重新獲取最新的用戶信息，確保圖片是最新的
-            // 使用 setTimeout 確保 alert 已經關閉
-            setTimeout(async () => {
-                try {
-                    const latestUser = await api.getCurrentUser();
-                    if (onUserUpdate) {
-                        onUserUpdate(latestUser);
-                    }
-                } catch (err) {
-                    console.warn('Failed to refresh user data, using updated user:', err);
+            // 使用 Promise 來處理 alert，確保在 alert 關閉後執行
+            await new Promise<void>((resolve) => {
+                alert("Profile updated successfully");
+                // 給瀏覽器一點時間處理 alert
+                setTimeout(resolve, 50);
+            });
+            
+            // 從服務器重新獲取最新的用戶信息，確保圖片是最新的
+            try {
+                const latestUser = await api.getCurrentUser();
+                if (onUserUpdate) {
+                    onUserUpdate(latestUser);
                 }
-            }, 100);
+            } catch (err) {
+                console.warn('Failed to refresh user data, using updated user:', err);
+            }
         } catch (error) {
             alert('Failed to update profile');
         }
