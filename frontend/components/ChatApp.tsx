@@ -142,14 +142,26 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
       
       switch (event.type) {
         case 'NEW_MESSAGE':
+          // 確保消息格式正確
+          if (!event.payload || !event.payload.id) {
+            console.warn('[ChatApp] Invalid NEW_MESSAGE payload:', event.payload);
+            break;
+          }
+          
           setMessages(prev => {
+             // 如果消息屬於當前房間，添加到消息列表
              if (event.payload.roomId === currentRoomId) {
                 // 檢查消息是否已存在（避免重複）
                 const exists = prev.some(msg => msg.id === event.payload.id);
                 if (exists) {
+                  console.log('[ChatApp] Message already exists, skipping:', event.payload.id);
                   return prev;
                 }
+                console.log('[ChatApp] Adding new message to current room:', event.payload.id);
                 return [...prev, event.payload];
+             } else {
+               // 即使不是當前房間的消息，也記錄日誌以便調試
+               console.log('[ChatApp] Message received for different room:', event.payload.roomId, 'current:', currentRoomId);
              }
              return prev;
           });
@@ -357,18 +369,19 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, onLogout, onUserUpdate }
     if (!file || !activeRoomId) return;
 
     try {
-      const webpBase64 = await convertImageToWebP(file);
+      // 上傳文件到服務器，獲取 URL
+      const imageUrl = await api.uploadMessageImage(file);
       await api.sendMessage({
         roomId: activeRoomId,
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
-        content: webpBase64,
+        content: imageUrl, // 使用圖片 URL 而不是 base64
         type: 'image'
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Image upload failed", err);
-      alert("Failed to process image");
+      alert(err.message || "Failed to upload image");
     } finally {
       if(fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -1117,10 +1130,12 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
         if (file) {
             setIsUploading(true);
             try {
-                const webp = await convertImageToWebP(file);
-                setAvatar(webp); // 立即更新顯示
-            } catch(e) {
-                alert("Failed to process avatar image");
+                // 上傳文件到服務器，獲取 URL
+                const imageUrl = await api.uploadAvatar(file);
+                setAvatar(imageUrl); // 立即更新顯示
+            } catch(e: any) {
+                console.error('Avatar upload error:', e);
+                alert(e.message || "Failed to upload avatar image");
             } finally {
                 setIsUploading(false);
             }

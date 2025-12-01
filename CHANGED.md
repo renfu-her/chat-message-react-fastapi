@@ -1,5 +1,62 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 14:47:08
+
+### 實現圖片文件上傳功能（實體文件存儲）
+- **backend/app/routers/upload.py**: 創建文件上傳路由
+  - 實現 `/api/upload/avatar` 端點，處理用戶頭像上傳
+  - 實現 `/api/upload/message-image` 端點，處理消息圖片上傳
+  - 文件保存到 `uploads/avatars/` 和 `uploads/messages/` 目錄
+  - 使用 UUID 生成唯一文件名，避免文件名衝突
+  - 驗證文件類型和大小（最大 10MB）
+  - 返回文件 URL 而不是 base64 數據
+- **backend/app/config.py**: 添加文件上傳配置
+  - `UPLOAD_DIR`: 上傳目錄路徑
+  - `MAX_UPLOAD_SIZE`: 最大上傳大小（10MB）
+  - `ALLOWED_IMAGE_TYPES`: 允許的圖片類型
+- **backend/main.py**: 配置靜態文件服務
+  - 使用 `StaticFiles` 掛載 `/api/uploads` 路徑
+  - 提供上傳文件的 HTTP 訪問
+- **frontend/services/api.ts**: 添加文件上傳 API
+  - `uploadAvatar(file)`: 上傳用戶頭像
+  - `uploadMessageImage(file)`: 上傳消息圖片
+  - 返回完整的圖片 URL
+- **frontend/components/ChatApp.tsx**: 更新圖片上傳邏輯
+  - `handleAvatarUpload`: 使用文件上傳 API 而不是 base64
+  - `handleFileUpload`: 使用文件上傳 API 而不是 base64
+  - 圖片存儲為實體文件，資料庫只存儲 URL
+- **backend/.gitignore**: 添加上傳文件忽略規則
+  - 忽略 `uploads/` 目錄和圖片文件
+
+### 改進效果
+- 圖片存儲為實體文件，減少資料庫大小
+- 圖片通過 HTTP 直接訪問，性能更好
+- 支持更大的圖片文件（不再受 base64 編碼限制）
+- 更好的文件管理和清理機制
+
+## 2025-12-01 14:44:00
+
+### 修復 WebSocket 消息不穩定問題
+- **frontend/services/api.ts**: 大幅改進 WebSocket 連接穩定性和可靠性
+  - 增加最大重連次數從 5 次到 10 次
+  - 實現指數退避重連策略（1s, 2s, 4s, 8s... 最多 30s）
+  - 添加連接狀態檢查，避免重複連接
+  - 改進錯誤處理，確保所有監聽器都能收到事件
+  - 添加手動斷開標記，避免手動斷開後自動重連
+  - 清理重連定時器，避免內存洩漏
+  - 改進日誌記錄，方便調試連接問題
+- **frontend/components/ChatApp.tsx**: 改進消息處理邏輯
+  - 添加消息格式驗證，確保消息有效
+  - 改進日誌記錄，記錄消息接收和處理過程
+  - 即使消息不屬於當前房間，也記錄日誌以便調試
+  - 確保消息不會因為格式問題而丟失
+
+### 問題解決
+- 解決了 WebSocket 消息有時能收到、有時收不到的問題
+- 解決了連接不穩定導致的消息丟失
+- 改善了重連機制，確保連接更可靠
+- 添加了詳細的日誌，方便排查問題
+
 ## 2025-12-01 14:34:38
 
 ### 添加 Profile 更新後頁面重新加載

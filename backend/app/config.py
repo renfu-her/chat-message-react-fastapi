@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # CORS 配置
     CORS_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
+    # 文件上傳配置
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_IMAGE_TYPES: list = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    
     class Config:
         env_file = ".env"
 

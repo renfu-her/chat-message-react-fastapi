@@ -78,7 +78,11 @@ const apiRequest = async <T>(
 let ws: WebSocket | null = null;
 let wsListeners: Set<(event: { type: string; payload: any }) => void> = new Set();
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
+let reconnectTimer: NodeJS.Timeout | null = null;
+let isManualDisconnect = false;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_DELAY = 1000; // 初始重連延遲 1 秒
+const MAX_RECONNECT_DELAY = 30000; // 最大重連延遲 30 秒
 
 const connectWebSocket = () => {
   const token = getToken();
@@ -87,56 +91,110 @@ const connectWebSocket = () => {
     return;
   }
 
+  // 如果已經連接，不重複連接
   if (ws && ws.readyState === WebSocket.OPEN) {
-    return; // Already connected
+    console.log('[WebSocket] Already connected');
+    return;
+  }
+
+  // 如果正在連接中，不重複連接
+  if (ws && ws.readyState === WebSocket.CONNECTING) {
+    console.log('[WebSocket] Connection in progress');
+    return;
+  }
+
+  // 清理舊連接
+  if (ws) {
+    try {
+      ws.close();
+    } catch (e) {
+      // 忽略關閉錯誤
+    }
+    ws = null;
   }
 
   try {
+    console.log('[WebSocket] Attempting to connect...');
     ws = new WebSocket(`${WS_BASE_URL}/ws?token=${token}`);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('[WebSocket] Connected successfully');
       reconnectAttempts = 0;
+      isManualDisconnect = false;
+      // 清理重連定時器
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         console.log('[WebSocket] Received event:', data.type, data.payload);
-        wsListeners.forEach(listener => listener(data));
+        // 確保所有監聽器都能收到事件
+        wsListeners.forEach(listener => {
+          try {
+            listener(data);
+          } catch (error) {
+            console.error('[WebSocket] Error in listener:', error);
+          }
+        });
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('[WebSocket] Error parsing message:', error, event.data);
       }
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('[WebSocket] Connection error:', error);
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    ws.onclose = (event) => {
+      console.log('[WebSocket] Disconnected', event.code, event.reason);
       ws = null;
+      
+      // 如果是手動斷開，不重連
+      if (isManualDisconnect) {
+        console.log('[WebSocket] Manual disconnect, not reconnecting');
+        return;
+      }
       
       // 嘗試重連
       if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
-        setTimeout(() => {
-          console.log(`Attempting to reconnect WebSocket (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+        // 指數退避：1s, 2s, 4s, 8s... 最多 30s
+        const delay = Math.min(RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+        console.log(`[WebSocket] Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`);
+        
+        reconnectTimer = setTimeout(() => {
           connectWebSocket();
-        }, 1000 * reconnectAttempts);
+        }, delay);
+      } else {
+        console.error('[WebSocket] Max reconnection attempts reached');
       }
     };
   } catch (error) {
-    console.error('Failed to create WebSocket connection:', error);
+    console.error('[WebSocket] Failed to create connection:', error);
+    ws = null;
   }
 };
 
 const disconnectWebSocket = () => {
+  isManualDisconnect = true;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   if (ws) {
-    ws.close();
+    try {
+      ws.close();
+    } catch (e) {
+      // 忽略關閉錯誤
+    }
     ws = null;
   }
   wsListeners.clear();
+  reconnectAttempts = 0;
 };
 
 // 標記用戶離線（用於關閉瀏覽器時）
@@ -268,6 +326,62 @@ export const api = {
       favorites: user.favorites || [],
       blocked: user.blocked || [],
     }));
+  },
+
+  async uploadAvatar(file: File): Promise<string> {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/upload/avatar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    // 返回完整的 URL（data.url 已經是 /api/uploads/... 格式）
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    return data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
+  },
+
+  async uploadMessageImage(file: File): Promise<string> {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/upload/message-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    // 返回完整的 URL（data.url 已經是 /api/uploads/... 格式）
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    return data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
   },
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
