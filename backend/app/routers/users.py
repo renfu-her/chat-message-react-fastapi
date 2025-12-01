@@ -68,42 +68,64 @@ async def update_profile(
             detail="You can only update your own profile"
         )
     
-    # 更新字段
-    if request.name is not None:
-        current_user.name = request.name
-    if request.avatar is not None:
-        current_user.avatar = request.avatar
-    if request.bio is not None:
-        current_user.bio = request.bio
-    if request.password is not None and request.password.strip():
-        current_user.password_hash = get_password_hash(request.password)
-    
-    db.commit()
-    db.refresh(current_user)
-    
-    # 廣播用戶更新事件
-    await websocket_manager.broadcast_user_update(current_user)
-    
-    # 獲取用戶關係
-    favorites = []
-    blocked = []
-    relationships = db.query(UserRelationship).filter(UserRelationship.user_id == current_user.id).all()
-    for rel in relationships:
-        if rel.relationship_type == "favorite":
-            favorites.append(rel.target_id)
-        elif rel.relationship_type == "blocked":
-            blocked.append(rel.target_id)
-    
-    return UserResponse(
-        id=current_user.id,
-        name=current_user.name,
-        email=current_user.email,
-        avatar=current_user.avatar,
-        is_online=current_user.is_online,
-        bio=current_user.bio,
-        favorites=favorites,
-        blocked=blocked
-    )
+    try:
+        # 更新字段
+        if request.name is not None:
+            current_user.name = request.name
+        if request.avatar is not None:
+            # 驗證 avatar 長度（雖然已改為 Text，但仍建議限制大小）
+            if len(request.avatar) > 10 * 1024 * 1024:  # 10MB 限制
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Avatar image is too large. Maximum size is 10MB."
+                )
+            current_user.avatar = request.avatar
+        if request.bio is not None:
+            current_user.bio = request.bio
+        if request.password is not None and request.password.strip():
+            current_user.password_hash = get_password_hash(request.password)
+        
+        db.commit()
+        db.refresh(current_user)
+        
+        # 廣播用戶更新事件（異步執行，失敗不影響主流程）
+        try:
+            await websocket_manager.broadcast_user_update(current_user)
+        except Exception as e:
+            # WebSocket 廣播失敗不應該影響更新流程
+            print(f"Warning: Failed to broadcast user update: {e}")
+        
+        # 獲取用戶關係
+        favorites = []
+        blocked = []
+        relationships = db.query(UserRelationship).filter(UserRelationship.user_id == current_user.id).all()
+        for rel in relationships:
+            if rel.relationship_type == "favorite":
+                favorites.append(rel.target_id)
+            elif rel.relationship_type == "blocked":
+                blocked.append(rel.target_id)
+        
+        return UserResponse(
+            id=current_user.id,
+            name=current_user.name,
+            email=current_user.email,
+            avatar=current_user.avatar,
+            is_online=current_user.is_online,
+            bio=current_user.bio,
+            favorites=favorites,
+            blocked=blocked
+        )
+    except HTTPException:
+        # 重新拋出 HTTP 異常
+        raise
+    except Exception as e:
+        # 資料庫操作失敗，回滾並返回錯誤
+        db.rollback()
+        print(f"Error updating profile for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {str(e)}"
+        )
 
 
 @router.post("/{user_id}/favorites/{target_id}")

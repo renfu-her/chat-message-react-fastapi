@@ -1,5 +1,46 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 11:33:00
+
+### 添加資料庫遷移腳本
+- **backend/migrate_avatar_to_text.py**: 創建資料庫遷移腳本
+  - 自動檢測並更新 `users.avatar` 和 `messages.sender_avatar` 欄位類型
+  - 從 `VARCHAR(500)` 遷移到 `TEXT` 類型
+  - 包含錯誤處理和狀態檢查
+  - 使用方式：`uv run python migrate_avatar_to_text.py`
+
+## 2025-12-01 11:23:21
+
+### 修復 Profile 更新錯誤 (500 Internal Server Error)
+- **backend/app/models.py**: 修復 avatar 欄位長度限制問題
+  - 將 `User.avatar` 從 `String(500)` 改為 `Text` 類型，以支持更長的 base64 編碼圖片
+  - 將 `Message.sender_avatar` 從 `String(500)` 改為 `Text` 類型，保持一致性
+  - 解決 base64 圖片（2.3 MB）超過 500 字符限制導致的資料庫錯誤
+- **backend/app/routers/users.py**: 增強 `update_profile` 函數的錯誤處理
+  - 添加完整的 try-except 錯誤處理機制
+  - 添加 avatar 大小驗證（10MB 限制）
+  - 將 WebSocket 廣播包裝在 try-except 中，避免廣播失敗影響主流程
+  - 添加資料庫回滾機制，確保錯誤時資料一致性
+  - 添加詳細的錯誤日誌記錄
+  - 返回更友好的錯誤訊息給前端
+
+### 問題解決
+- 解決了 Profile 更新時出現的 500 Internal Server Error
+- 解決了 base64 圖片超過資料庫欄位長度限制的問題
+- 改善了錯誤處理和用戶體驗
+
+### 重要提醒
+- **資料庫遷移**：如果資料庫已經存在，需要執行遷移腳本更新表結構
+  ```bash
+  cd backend
+  uv run python migrate_avatar_to_text.py
+  ```
+  或者手動執行 SQL：
+  ```sql
+  ALTER TABLE users MODIFY COLUMN avatar TEXT NOT NULL;
+  ALTER TABLE messages MODIFY COLUMN sender_avatar TEXT NOT NULL;
+  ```
+
 ## 2025-11-29 23:34:38
 
 ### 修復 Pydantic EmailStr 依賴問題
