@@ -1,5 +1,14 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 14:34:38
+
+### 添加 Profile 更新後頁面重新加載
+- **frontend/components/ChatApp.tsx**: 在 Profile 更新成功後重新加載頁面
+  - 在 `handleSave` 中，當 Profile 更新成功並點擊 "OK" 後，調用 `window.location.reload()`
+  - 確保所有組件、數據和圖片都完全重新加載
+  - 解決圖片緩存和狀態不同步的問題
+  - 確保用戶信息在所有地方（側邊欄、消息、用戶列表等）都正確更新
+
 ## 2025-12-01 14:32:06
 
 ### 修復 Profile 圖片未更新問題

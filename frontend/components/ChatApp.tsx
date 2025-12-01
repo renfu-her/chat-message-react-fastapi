@@ -1098,8 +1098,14 @@ const ProfileForm: React.FC<{ user: User, onClose: () => void, onUserUpdate?: (u
                 if (onUserUpdate) {
                     onUserUpdate(latestUser);
                 }
+                
+                // 強制重新加載頁面以確保所有組件都更新
+                // 這會重新加載所有用戶數據、房間數據等，確保頭像在所有地方都更新
+                window.location.reload();
             } catch (err) {
                 console.warn('Failed to refresh user data, using updated user:', err);
+                // 即使獲取失敗，也重新加載頁面以確保數據一致性
+                window.location.reload();
             }
         } catch (error) {
             alert('Failed to update profile');
