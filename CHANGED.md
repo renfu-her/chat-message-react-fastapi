@@ -1,5 +1,71 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 17:27:27
+
+### 建立 Flutter `app` 專案並對齊現有 React 架構
+- **app/**: 使用 `flutter create app --platforms=android,ios,web` 建立新的 Flutter 應用程式
+- **app/pubspec.yaml**: 新增核心依賴
+  - `dio`, `web_socket_channel`, `provider`, `shared_preferences`, `image_picker`, `cached_network_image`, `flutter_dotenv`
+- **app/lib/core/config.dart**: 新增 `AppConfig`，從 `.env` 讀取 `API_BASE_URL`、`WS_BASE_URL`
+- **app/lib/core/models.dart**: 定義 `User`、`Room`、`Message`、`MessageType` 等模型，對齊 `frontend/types.ts` 與後端 snake_case/camelCase 欄位
+- **app/lib/data/api_client.dart**: 建立 `ApiClient` 包裝 `Dio`，處理 baseUrl、timeout、JWT token 儲存與自動附加 Authorization header，401/403 時自動清除 token
+- **app/lib/data/auth_repository.dart**: 實作登入、註冊、取得目前使用者與登出邏輯，映射後端回傳結構到 `User`
+- **app/lib/main.dart**:
+  - 建立 `AuthState`（`ChangeNotifier`）儲存目前登入的 `User`
+  - 使用 `MultiProvider` 注入 `AuthState`
+  - 啟動時載入 `.env` 並顯示登入畫面
+- **app/lib/presentation/login/login_screen.dart**:
+  - 建立登入 / 註冊畫面，包含 email、password，以及與 React 相同邏輯的數學 CAPTCHA（+/-/*//）
+  - 透過 `AuthRepository` 呼叫後端 `/auth/login` 與 `/auth/register`
+  - 成功後更新全域 `AuthState`，失敗顯示錯誤訊息並重生 CAPTCHA
+- **app/test/widget_test.dart**: 更新 widget 測試，驗證 `ChatApp` 能正確渲染登入畫面
+
+### 效果
+- 新增跨 Android / iOS / Web 的 Flutter `app`，並完成基礎結構與認證模型/呼叫
+- 為之後聊天室 UI、WebSocket、圖片上傳等功能打好乾淨的架構基礎
+
+## 2025-12-01 17:40:00
+
+### 完成 Flutter Chat UI、WebSocket 連線與 Profile/Avatar 管理
+- **app/lib/data/rooms_repository.dart**: 封裝房間相關 REST API
+  - `getRooms()`, `createRoom()`, `joinRoom()`, `leaveRoom()`, `deleteRoom()`
+- **app/lib/data/messages_repository.dart**: 封裝訊息相關 REST API
+  - `getMessages(roomId)`, `sendTextMessage()`, `sendImageMessage()`
+- **app/lib/data/upload_repository.dart**: 封裝檔案上傳 API
+  - `uploadAvatar(file)`, `uploadMessageImage(file)` 對應後端 `/upload/avatar` 與 `/upload/message-image`
+- **app/lib/data/realtime_client.dart**: 建立簡潔的 WebSocket client
+  - 連線到 `${WS_BASE_URL}/ws?token=...`，支援自動重連（指數退避，最多 10 次）
+  - 透過 listener 廣播 `NEW_MESSAGE`、`ROOM_CREATED`、`ROOM_UPDATED`、`ROOM_DELETED` 等事件
+- **app/lib/main.dart**:
+  - 在 `AuthState` 新增 `bootstrap()`，啟動時呼叫 `/auth/me` 自動還原登入狀態
+  - 新增 `_RootNavigator`，依 `AuthState` 自動在 Login 與 Chat 畫面之間切換
+- **app/lib/presentation/chat/chat_screen.dart**:
+  - 左側房間列表（含私密房間 Lock icon）、右側訊息列表＋輸入框
+  - 初次載入時讀取房間並自動選擇第一個房間，載入對應訊息
+  - 發送文字訊息時使用樂觀更新：先建立 `isTemp` 訊息，成功後用真正訊息覆蓋
+  - 監聽 WebSocket `NEW_MESSAGE`、`ROOM_CREATED`、`ROOM_UPDATED`、`ROOM_DELETED` 事件並更新 UI
+  - AppBar 加入 Profile 按鈕可進入個人資料頁
+- **app/lib/presentation/profile/profile_screen.dart**:
+  - 顯示目前頭像與暱稱，支援修改顯示名稱
+  - 使用 `image_picker` 從相簿選擇圖片，透過 `UploadRepository.uploadAvatar` 上傳，後端自動轉 WebP 並回傳 URL
+  - 使用 `AuthRepository.updateProfile` 更新 `/users/{id}/profile`，並同步更新全域 `AuthState`
+- **app/lib/data/auth_repository.dart**:
+  - 將 `getCurrentUser()` 對應到 `/auth/me`（與 React 前端一致）
+  - 新增 `updateProfile(User)` 用於更新個資與頭像
+- **app/README.md**:
+  - 說明 Flutter `app` 架構（core/data/presentation）、使用到的套件
+  - 繁體中文與 English 混合描述主要功能與執行方式（Android / iOS / Web）
+  - 說明如何設定 `API_BASE_URL` 與 `WS_BASE_URL` 以對接現有 FastAPI backend
+
+### 效果
+- Flutter 端已具備：
+  - 登入 / 註冊 + CAPTCHA
+  - Token 持久化與開機自動登入
+  - 房間列表與訊息列表顯示
+  - 文字訊息發送（含樂觀更新）與 WebSocket 即時接收新訊息
+  - 基本 Profile 管理與頭像上傳（使用實體檔案 URL，對齊現有後端邏輯）
+- 為後續在 Flutter 中加上圖片訊息顯示、更多設定與 UI 美化提供完整骨架
+
 ## 2025-12-01 16:27:22
 
 ### 改進圖片上傳體驗，實現樂觀更新和 WebSocket 通知
