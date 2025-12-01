@@ -10,6 +10,7 @@ from app.config import settings
 
 def migrate_avatar_columns():
     """執行遷移：將 avatar 欄位改為 TEXT"""
+    connection = None
     try:
         # 連接到資料庫
         connection = pymysql.connect(
@@ -38,13 +39,13 @@ def migrate_avatar_columns():
             if result:
                 current_type = result[0].upper()
                 if 'TEXT' in current_type:
-                    print("✓ users.avatar 已經是 TEXT 類型，跳過")
+                    print("[OK] users.avatar 已經是 TEXT 類型，跳過")
                 else:
                     print(f"  發現 users.avatar 為 {result[0]}，正在修改為 TEXT...")
                     cursor.execute("ALTER TABLE users MODIFY COLUMN avatar TEXT NOT NULL")
-                    print("✓ users.avatar 已更新為 TEXT")
+                    print("[OK] users.avatar 已更新為 TEXT")
             else:
-                print("⚠ 未找到 users.avatar 欄位，可能表不存在")
+                print("[WARN] 未找到 users.avatar 欄位，可能表不存在")
             
             # 檢查 messages 表的 sender_avatar 欄位類型
             cursor.execute("""
@@ -59,21 +60,21 @@ def migrate_avatar_columns():
             if result:
                 current_type = result[0].upper()
                 if 'TEXT' in current_type:
-                    print("✓ messages.sender_avatar 已經是 TEXT 類型，跳過")
+                    print("[OK] messages.sender_avatar 已經是 TEXT 類型，跳過")
                 else:
                     print(f"  發現 messages.sender_avatar 為 {result[0]}，正在修改為 TEXT...")
                     cursor.execute("ALTER TABLE messages MODIFY COLUMN sender_avatar TEXT NOT NULL")
-                    print("✓ messages.sender_avatar 已更新為 TEXT")
+                    print("[OK] messages.sender_avatar 已更新為 TEXT")
             else:
-                print("⚠ 未找到 messages.sender_avatar 欄位，可能表不存在")
+                print("[WARN] 未找到 messages.sender_avatar 欄位，可能表不存在")
             
             # 提交更改
             connection.commit()
             print("-" * 50)
-            print("✓ 遷移完成！")
+            print("[OK] 遷移完成！")
             
     except Exception as e:
-        print(f"✗ 遷移失敗: {e}")
+        print(f"[ERROR] 遷移失敗: {e}")
         if connection:
             connection.rollback()
         sys.exit(1)
