@@ -41,8 +41,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 註冊路由（先註冊其他路由）
+app.include_router(auth.router, prefix="/api/auth", tags=["認證"])
+app.include_router(users.router, prefix="/api/users", tags=["用戶"])
+app.include_router(rooms.router, prefix="/api/rooms", tags=["房間"])
+app.include_router(messages.router, prefix="/api/messages", tags=["消息"])
+app.include_router(realtime.router, prefix="/api/realtime", tags=["實時通信"])
+app.include_router(upload.router, prefix="/api/upload", tags=["文件上傳"])
+
 # 靜態文件服務（提供上傳的文件訪問）
-# 必須在其他路由之前註冊，確保優先匹配
+# 必須在其他路由之後註冊，使用裝飾器路由確保優先匹配
 # 使用絕對路徑，基於後端目錄，確保在不同工作目錄下都能正確訪問
 upload_dir = settings.upload_dir_absolute
 upload_dir.mkdir(parents=True, exist_ok=True)
@@ -50,6 +58,7 @@ print(f"[StaticFiles] Mounting uploads directory: {upload_dir}")
 print(f"[StaticFiles] Backend directory: {Path(__file__).parent.resolve()}")
 
 # 使用路由方式提供靜態文件服務（更可靠）
+# 注意：這個路由必須在 include_router 之後，這樣 FastAPI 會優先匹配它
 @app.get("/api/uploads/{file_path:path}")
 @app.head("/api/uploads/{file_path:path}")
 async def serve_uploaded_file(file_path: str):
@@ -82,14 +91,6 @@ async def serve_uploaded_file(file_path: str):
         print(f"[StaticFiles] File not found: {file_full_path}")
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
 
-# 註冊路由（在其他路由之後，確保 /api/uploads 優先匹配）
-app.include_router(auth.router, prefix="/api/auth", tags=["認證"])
-app.include_router(users.router, prefix="/api/users", tags=["用戶"])
-app.include_router(rooms.router, prefix="/api/rooms", tags=["房間"])
-app.include_router(messages.router, prefix="/api/messages", tags=["消息"])
-app.include_router(realtime.router, prefix="/api/realtime", tags=["實時通信"])
-app.include_router(upload.router, prefix="/api/upload", tags=["文件上傳"])
-
 # WebSocket 端點
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -104,6 +105,33 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/debug/uploads")
+async def debug_uploads():
+    """調試端點：檢查上傳目錄和文件"""
+    import os
+    files_info = []
+    
+    # 檢查 messages 目錄
+    messages_dir = upload_dir / "messages"
+    if messages_dir.exists():
+        for file in messages_dir.iterdir():
+            if file.is_file():
+                files_info.append({
+                    "name": file.name,
+                    "path": str(file),
+                    "size": file.stat().st_size,
+                    "url": f"/api/uploads/messages/{file.name}"
+                })
+    
+    return {
+        "upload_dir": str(upload_dir),
+        "upload_dir_exists": upload_dir.exists(),
+        "messages_dir": str(messages_dir),
+        "messages_dir_exists": messages_dir.exists(),
+        "files": files_info[:10]  # 只返回前10個文件
+    }
 
 
 if __name__ == "__main__":
