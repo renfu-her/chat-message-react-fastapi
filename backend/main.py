@@ -43,10 +43,11 @@ app.add_middleware(
 
 # 靜態文件服務（提供上傳的文件訪問）
 # 必須在其他路由之前註冊，確保優先匹配
-# 使用絕對路徑，確保在不同工作目錄下都能正確訪問
-upload_dir = Path(settings.UPLOAD_DIR).resolve()
+# 使用絕對路徑，基於後端目錄，確保在不同工作目錄下都能正確訪問
+upload_dir = settings.upload_dir_absolute
 upload_dir.mkdir(parents=True, exist_ok=True)
 print(f"[StaticFiles] Mounting uploads directory: {upload_dir}")
+print(f"[StaticFiles] Backend directory: {Path(__file__).parent.resolve()}")
 
 # 使用路由方式提供靜態文件服務（更可靠）
 @app.get("/api/uploads/{file_path:path}")

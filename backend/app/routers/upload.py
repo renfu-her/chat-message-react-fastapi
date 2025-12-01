@@ -36,8 +36,8 @@ async def check_file(file_path: str):
             "upload_dir": str(UPLOAD_DIR)
         }
 
-# 確保上傳目錄存在（使用絕對路徑）
-UPLOAD_DIR = Path(settings.UPLOAD_DIR).resolve()
+# 確保上傳目錄存在（使用絕對路徑，基於後端目錄）
+UPLOAD_DIR = settings.upload_dir_absolute
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # 創建子目錄

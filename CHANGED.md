@@ -1,5 +1,31 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 15:26:31
+
+### 修復文件路徑配置，使用基於後端目錄的絕對路徑
+- **backend/app/config.py**: 改進上傳目錄配置
+  - 添加 `BACKEND_DIR` 變量，獲取後端代碼的絕對目錄
+  - 添加 `upload_dir_absolute` 屬性，自動計算上傳目錄的絕對路徑
+  - 支持通過環境變量 `UPLOAD_DIR_ABSOLUTE` 設置絕對路徑
+  - 如果未設置，則基於後端目錄計算相對路徑的絕對路徑
+  - 確保無論從哪個目錄運行後端，都能找到正確的上傳目錄
+- **backend/app/routers/upload.py**: 使用新的絕對路徑配置
+  - 使用 `settings.upload_dir_absolute` 而不是 `Path(settings.UPLOAD_DIR).resolve()`
+- **backend/main.py**: 使用新的絕對路徑配置
+  - 使用 `settings.upload_dir_absolute` 確保文件服務使用正確的路徑
+  - 添加後端目錄的調試日誌
+- 解決因工作目錄不同導致的文件路徑問題
+
+## 2025-12-01 15:13:45
+
+### 修復 Nginx 配置，添加專用的 /api/uploads/ location
+- **deployment/nginx.conf**: 添加專用的 `/api/uploads/` location
+  - 在 `/api/` location 之前添加 `/api/uploads/` location，確保優先匹配
+  - 正確代理到後端 `http://127.0.0.1:8097/api/uploads/`
+  - 禁用緩存，確保文件更新時能立即看到
+  - 添加適當的緩存控制頭部
+  - 解決上傳文件 404 Not Found 問題
+
 ## 2025-12-01 15:09:35
 
 ### 改進文件服務路由和調試
