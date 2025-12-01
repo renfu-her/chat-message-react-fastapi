@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -31,9 +33,26 @@ class AuthState extends ChangeNotifier {
 
   Future<void> bootstrap() async {
     final repo = AuthRepository(ApiClient.instance);
+    final apiClient = ApiClient.instance;
+    
+    // Check if token exists first
+    final token = await apiClient.getToken();
+    if (token == null || token.isEmpty) {
+      user = null;
+      notifyListeners();
+      return;
+    }
+    
     try {
-      user = await repo.getCurrentUser();
-    } catch (_) {
+      user = await repo.getCurrentUser().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Connection timeout');
+        },
+      );
+    } catch (e) {
+      // API failed or timeout, user is not authenticated
+      print('Bootstrap failed: $e');
       user = null;
     }
     notifyListeners();

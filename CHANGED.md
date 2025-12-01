@@ -1,5 +1,19 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 22:31:15
+
+### 修復 Flutter 應用啟動時一直轉圈圈（卡在載入狀態）的問題
+- **app/lib/main.dart**: 優化 `bootstrap()` 方法的錯誤處理和超時機制
+  - 添加 `dart:async` 導入以使用 `TimeoutException`
+  - 在調用 API 前先檢查 token 是否存在，如果沒有 token 則直接返回，不調用 API
+  - 為 `getCurrentUser()` 添加 5 秒超時限制，避免無限等待
+  - 改進錯誤處理，添加日誌輸出以便調試
+  - 確保即使 API 失敗或超時，應用也能正常顯示登入畫面
+- **問題解決**：
+  - 解決了應用在後端未運行或無法連接時一直卡在載入畫面的問題
+  - 應用現在會在 5 秒內完成初始化，即使後端無法連接也會顯示登入畫面
+  - 如果沒有 token，會立即跳過 API 調用，加快啟動速度
+
 ## 2025-12-01 22:27:30
 
 ### 修復 Flutter 主題配置錯誤（ThemeData.brightness 與 ColorScheme.brightness 不匹配）
