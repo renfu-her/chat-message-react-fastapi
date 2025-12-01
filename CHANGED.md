@@ -1,5 +1,25 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 15:47:03
+
+### 修復 Cloudflare 緩存 404 響應問題
+- **deployment/nginx.conf**: 改進 `/api/uploads/` location 的緩存控制
+  - 添加 `proxy_hide_header` 來隱藏後端的緩存頭部，避免衝突
+  - 使用 `add_header ... always` 確保即使錯誤響應也添加緩存控制頭部
+  - 添加 `X-Cache-Status: BYPASS` 頭部，提示 Cloudflare 不要緩存
+  - 啟用調試日誌 `error_log ... debug` 用於排查問題
+  - 解決 Cloudflare 緩存 404 響應導致文件無法訪問的問題
+  - **注意**：需要清除 Cloudflare 緩存才能看到效果
+
+## 2025-12-01 15:45:00
+
+### 修復 Nginx location 匹配問題
+- **deployment/nginx.conf**: 改進 `/api/uploads/` location 配置
+  - 使用 `location ^~ /api/uploads/` 前綴匹配，確保優先匹配，避免被 `/api/` location 覆蓋
+  - `^~` 前綴表示如果匹配，停止搜索其他 location，確保優先級最高
+  - 添加獨立的訪問日誌 `/var/log/nginx/chat.ai-tracks.com-uploads.log` 用於調試
+  - 解決通過域名訪問時返回 404 的問題（localhost 可以訪問，但域名訪問不行）
+
 ## 2025-12-01 15:35:24
 
 ### 調整路由順序並添加調試端點
