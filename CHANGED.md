@@ -1,5 +1,16 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-01 15:03:36
+
+### 修復上傳文件 404 Not Found 問題
+- **backend/main.py**: 改用路由方式提供靜態文件服務
+  - 移除 `StaticFiles` 掛載方式，改用 `@app.get("/api/uploads/{file_path:path}")` 路由
+  - 添加安全檢查，確保文件路徑在上傳目錄內（防止路徑遍歷攻擊）
+  - 使用 `FileResponse` 返回文件，自動設置正確的 MIME 類型
+  - 如果文件不存在，返回 404 錯誤
+  - 解決 Nginx 代理時文件無法訪問的問題
+- 確保上傳的文件可以通過 `/api/uploads/{file_path}` 正確訪問
+
 ## 2025-12-01 14:54:30
 
 ### 實現圖片自動轉換為 WebP 格式

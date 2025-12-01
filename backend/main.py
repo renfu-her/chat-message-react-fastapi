@@ -1,6 +1,6 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import uvicorn
 from pathlib import Path
@@ -54,7 +54,28 @@ app.include_router(upload.router, prefix="/api/upload", tags=["文件上傳"])
 upload_dir = Path(settings.UPLOAD_DIR).resolve()
 upload_dir.mkdir(parents=True, exist_ok=True)
 print(f"[StaticFiles] Mounting uploads directory: {upload_dir}")
-app.mount("/api/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
+
+# 使用路由方式提供靜態文件服務（更可靠）
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
+
+@app.get("/api/uploads/{file_path:path}")
+async def serve_uploaded_file(file_path: str):
+    """提供上傳的文件訪問"""
+    file_full_path = upload_dir / file_path
+    # 安全檢查：確保文件在上傳目錄內
+    try:
+        file_full_path.resolve().relative_to(upload_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if file_full_path.exists() and file_full_path.is_file():
+        return FileResponse(
+            path=str(file_full_path),
+            media_type="image/webp" if file_path.endswith(".webp") else "application/octet-stream"
+        )
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
 # WebSocket 端點
 @app.websocket("/ws")
