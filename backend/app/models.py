@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, JSON
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -16,7 +17,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    avatar = Column(Text, nullable=False)  # 改為 Text 以支持更長的 base64 圖片
+    avatar = Column(LONGTEXT, nullable=False)  # 改為 LONGTEXT 以支持更大的 base64 圖片（最大 4GB）
     is_online = Column(Boolean, default=False, nullable=False)
     bio = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -69,7 +70,7 @@ class Message(Base):
     room_id = Column(String(36), ForeignKey("rooms.id"), nullable=False, index=True)
     sender_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     sender_name = Column(String(100), nullable=False)  # 冗余字段，避免查詢用戶表
-    sender_avatar = Column(Text, nullable=False)  # 冗余字段，改為 Text 以支持更長的 base64 圖片
+    sender_avatar = Column(LONGTEXT, nullable=False)  # 冗余字段，改為 LONGTEXT 以支持更大的 base64 圖片（最大 4GB）
     content = Column(Text, nullable=False)
     type = Column(String(20), default="text", nullable=False)  # 'text' or 'image'
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
