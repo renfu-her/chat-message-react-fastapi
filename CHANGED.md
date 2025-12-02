@@ -1,5 +1,24 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-02 08:45:12
+
+### 進一步修復 getDevServer 錯誤並優化配置
+- **mobile/app.json**: 禁用新架構
+  - 將 `newArchEnabled` 從 `true` 改為 `false`
+  - 新架構可能導致開發服務器連接問題
+- **mobile/FIX_DEV_SERVER.md**: 創建詳細的修復指南
+  - 提供完整的清除緩存和重新安裝步驟
+  - 記錄所有已修復的配置問題
+- **緩存清理**: 清除 Expo 和 Metro bundler 緩存
+  - 刪除 `.expo` 目錄
+  - 清除 `node_modules/.cache`
+- **問題分析**:
+  - `getDevServer is not a function` 錯誤通常由以下原因引起：
+    - Metro bundler 緩存問題
+    - Expo 新架構兼容性問題
+    - 依賴版本衝突
+  - 已通過禁用新架構和清除緩存來解決
+
 ## 2025-12-02 08:41:47
 
 ### 修復 React Native 應用開發服務器連接錯誤
