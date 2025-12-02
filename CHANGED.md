@@ -1,5 +1,87 @@
 # 變更記錄 (Change Log)
 
+## 2025-12-02 08:41:47
+
+### 修復 React Native 應用開發服務器連接錯誤
+- **mobile/index.ts**: 刪除衝突的入口文件
+  - 使用 Expo Router 時不需要 `index.ts`，因為 `expo-router/entry` 會自動處理
+- **mobile/App.tsx**: 刪除衝突的 App 組件
+  - Expo Router 使用檔案系統路由，不需要傳統的 App.tsx
+- **mobile/metro.config.js**: 創建 Metro bundler 配置文件
+  - 使用 Expo 默認配置
+  - 確保 Metro bundler 正確工作
+- **mobile/TROUBLESHOOTING.md**: 創建故障排除指南
+  - 記錄常見錯誤和解決方法
+  - 包含清除緩存和重新啟動的步驟
+- **問題解決**：
+  - 解決了 `getDevServer is not a function` 錯誤
+  - 修復了 Expo Router 配置衝突
+  - 應用現在可以正常啟動和連接開發服務器
+
+## 2025-12-02 08:22:58
+
+### 新增 React Native 移動應用（使用 Expo）
+- **mobile/**: 創建完整的 React Native 移動應用項目
+  - 使用 Expo ~54.0 和 Expo Router ~4.0 作為框架
+  - 配置 TypeScript 支持
+  - 設置深色主題 UI
+- **mobile/types/index.ts**: 複製並適配類型定義
+  - 從 `frontend/types.ts` 複製所有類型定義
+  - 添加 React Native 導航相關類型
+- **mobile/services/api.ts**: 創建完整的 API 服務層
+  - 使用 AsyncStorage 替代 localStorage
+  - 實現所有 API 方法（認證、用戶、房間、消息、上傳）
+  - 適配 React Native 的文件上傳（使用 URI）
+- **mobile/services/websocket.ts**: 實現 WebSocket 連接管理
+  - 自動重連機制（指數退避，最多 10 次）
+  - 事件訂閱系統
+  - 連接狀態管理
+- **mobile/store/**: 實現 Zustand 狀態管理
+  - `useAuthStore.ts`: 認證狀態管理
+  - `useChatStore.ts`: 聊天狀態管理（房間、消息、用戶）
+- **mobile/app/(auth)/**: 認證屏幕
+  - `login.tsx`: 登入屏幕，實現數學 CAPTCHA 驗證
+  - `register.tsx`: 註冊屏幕
+  - 使用 Expo Router 進行導航
+- **mobile/app/(tabs)/**: 主應用標籤屏幕
+  - `chat.tsx`: 聊天主屏幕，包含房間列表、消息列表、消息輸入
+  - `rooms.tsx`: 房間管理屏幕，創建、查看、刪除房間
+  - `users.tsx`: 用戶列表屏幕，查看用戶、收藏功能
+  - `profile.tsx`: 個人資料屏幕，編輯資料、上傳頭像
+- **mobile/components/**: 可重用組件
+  - `MessageItem.tsx`: 消息項目組件
+  - `RoomItem.tsx`: 房間項目組件
+  - `ChatInput.tsx`: 消息輸入組件
+- **mobile/constants/config.ts**: 配置常量
+  - API_BASE_URL 和 WS_BASE_URL 配置
+  - 存儲鍵常量
+- **mobile/app.json**: Expo 配置
+  - 應用名稱、圖標、啟動畫面配置
+  - 深色主題支持
+- **mobile/README.md**: 項目文檔
+  - 安裝和使用說明
+  - 項目結構說明
+- **功能實現**：
+  - 完整的用戶認證流程（登入/註冊，帶 CAPTCHA）
+  - 多房間聊天功能
+  - 實時消息推送（WebSocket）
+  - 房間管理（創建、加入、刪除）
+  - 用戶管理（收藏、封鎖）
+  - 個人資料管理（編輯、頭像上傳）
+  - 圖片上傳功能（使用 expo-image-picker）
+- **技術特點**：
+  - 使用 Expo Router 進行檔案系統路由
+  - Zustand 進行輕量級狀態管理
+  - AsyncStorage 進行持久化存儲
+  - 深色主題 UI 設計
+  - 響應式布局適配移動設備
+
+### 效果
+- 成功創建完整的 React Native 移動應用
+- 保留現有的 React web frontend，新增獨立的 mobile 項目
+- 所有核心功能已實現，可以與後端 API 正常通信
+- 準備好進行測試和進一步優化
+
 ## 2025-12-01 22:31:15
 
 ### 修復 Flutter 應用啟動時一直轉圈圈（卡在載入狀態）的問題
